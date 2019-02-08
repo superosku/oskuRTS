@@ -35,6 +35,16 @@ impl Map {
         return new_map;
     }
 
+    pub fn set_water(&mut self, x: u32, y: u32) {
+        let index: usize = (x + y * self.width) as usize;
+        self.data[index] = GroundType::Water;
+    }
+
+    pub fn set_grass(&mut self, x: u32, y: u32) {
+        let index: usize = (x + y * self.width) as usize;
+        self.data[index] = GroundType::Grass;
+    }
+
     pub fn get_at(&self, x: u32, y: u32) -> GroundType {
         if x < 0 || y < 0 || x >= self.width || y >= self.height {
             return GroundType::Empty

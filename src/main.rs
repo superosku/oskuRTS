@@ -78,6 +78,14 @@ pub fn main() -> Result<(), String> {
                 // Event::KeyDown { keycode: Some(Keycode::D), .. } => (camera.move_center( 0.5,  0.0)),
                 Event::KeyDown { keycode: Some(Keycode::I), .. } => (camera.zoom_in()),
                 Event::KeyDown { keycode: Some(Keycode::O), .. } => (camera.zoom_out()),
+                Event::KeyDown { keycode: Some(Keycode::K), .. } => {
+                    let game_pos: (f32, f32) = camera.screen_to_game(mouse_state.x(), mouse_state.y());
+                    map.set_water(game_pos.0 as u32, game_pos.1 as u32);
+                },
+                Event::KeyDown { keycode: Some(Keycode::L), .. } => {
+                    let game_pos: (f32, f32) = camera.screen_to_game(mouse_state.x(), mouse_state.y());
+                    map.set_grass(game_pos.0 as u32, game_pos.1 as u32);
+                },
                 Event::KeyDown { keycode: Some(Keycode::N), .. } |
                 Event::MouseButtonDown { mouse_btn: MouseButton::Left, .. } => {
                     let game_pos: (f32, f32) = camera.screen_to_game(mouse_state.x(), mouse_state.y());

@@ -22,6 +22,7 @@ arrows -> move the guy (deprecated)
 mouse click -> add unit to mouse position
 N -> add unit to mouse position (hold to add quickly)
 IO -> zoom in/out
+KL -> make tile water/land
 ```
 
 Features
