@@ -2,7 +2,7 @@
 use super::point;
 use super::map;
 
-#[derive(Copy, Clone)]
+// #[derive(Copy, Clone)]
 pub struct Entity {
     pub location: point::Point
 }
@@ -14,18 +14,22 @@ impl Entity {
         }
     }
 
-    pub fn interact_with(&mut self, other: Entity) {
+    pub fn add_force_vect(&mut self, force_vect: &point::Vector) {
+        self.location.add(&force_vect);
+    }
+
+    pub fn interact_with(&self, other: &Entity) -> Option<point::Vector> {
         let max_dist = 0.55;
 
         let dist_vect = self.location.dist_vect(&other.location);
         let distance = dist_vect.length();
         if distance == 0.0 {
-            return
+            return None
         } else if distance < max_dist {
             let move_vect = dist_vect.normalized().multiplied((max_dist - distance) * 0.1);
-            self.location = self.location.add_vect(&move_vect);
+            return Some(move_vect);
         }
-
+        return None
     }
 
     pub fn interact_with_map(&mut self, map: &map::Map) {

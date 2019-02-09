@@ -1,6 +1,7 @@
 
 use super::entity;
 use super::map;
+use super::point;
 
 pub struct EntityHolder {
     pub entities: Vec<entity::Entity>,
@@ -10,7 +11,7 @@ impl EntityHolder {
     pub fn new() -> EntityHolder {
         EntityHolder {
             // entities: Vec<entity::Entity>::new()
-            entities: Vec::new()
+            entities: Vec::new(),
         }
     }
 
@@ -23,23 +24,25 @@ impl EntityHolder {
         return &self.entities
     }
 
-    fn entity_at(&self, i: usize) -> entity::Entity {
-        /// Returns copy of entity
-        self.entities[i]
-    }
-
     pub fn entities_interact_with_each_other(&mut self) {
-        let mut entity1: entity::Entity;
-        // TOOD: Is this copy really required? Cant borrow two mutables
-        // Ok for now since entity only holds x,y but how about future?
-        let vec_len = self.entities.len(); 
-        for i_2 in 0..vec_len {
-            let entity_2 = self.entity_at(i_2);
-            for (i_1, entity_1) in self.entities.iter_mut().enumerate() {
+        let mut force_vecs: Vec<point::Vector> = Vec::new();
+
+        for (i_1, entity_1) in self.entities.iter().enumerate() {
+            let mut force_vec_for_1 = point::Vector::new(0.0, 0.0);
+            for (i_2, entity_2) in self.entities.iter().enumerate() {
                 if i_1 != i_2 {
-                    entity_1.interact_with(entity_2);
+                    let vector_some = entity_1.interact_with(entity_2);
+                    match vector_some {
+                        Some(vector) => {force_vec_for_1.add(&vector)},
+                        _ => {}
+                    }
                 }
             }
+            force_vecs.push(force_vec_for_1);
+        }
+
+        for (entity, force_vect) in self.entities.iter_mut().zip(force_vecs) {
+            entity.add_force_vect(&force_vect);
         }
     }
 

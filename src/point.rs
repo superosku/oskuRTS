@@ -1,6 +1,5 @@
 
 
-#[derive(Copy, Clone)]
 pub struct Vector {
     pub x: f32,
     pub y: f32,
@@ -24,6 +23,11 @@ impl Vector {
         )
     }
 
+    pub fn add(&mut self, other: &Vector) {
+        self.x += other.x;
+        self.y += other.y;
+    }
+
     pub fn multiplied(&self, times: f32) -> Vector {
         Vector::new(
             self.x * times,
@@ -33,7 +37,6 @@ impl Vector {
 }
 
 
-#[derive(Copy, Clone)]
 pub struct Point {
     pub x: f32,
     pub y: f32,
@@ -52,6 +55,11 @@ impl Point {
         ).sqrt()
     }
     */
+
+    pub fn add(&mut self, vec: &Vector) {
+        self.x += vec.x;
+        self.y += vec.y;
+    }
 
     pub fn add_vect(&self, vec: &Vector) -> Point {
         Point {

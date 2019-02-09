@@ -11,8 +11,15 @@ brew install sdl2 sdl2_gfx sdl2_ttf sdl2_mixer sdl2_image sdl2_ttf sdl2_gfx
 Build and run the game
 
 ```
+# Debug build:
+
 cargo run
+
+# Optimized build:
+
+cargo build --release && ./target/release/rust-game
 ```
+
 
 Instructions
 

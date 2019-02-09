@@ -86,8 +86,9 @@ pub fn main() -> Result<(), String> {
                     let game_pos: (f32, f32) = camera.screen_to_game(mouse_state.x(), mouse_state.y());
                     map.set_grass(game_pos.0 as u32, game_pos.1 as u32);
                 },
-                Event::KeyDown { keycode: Some(Keycode::N), .. } |
-                Event::MouseButtonDown { mouse_btn: MouseButton::Left, .. } => {
+                Event::KeyDown { keycode: Some(Keycode::N), .. }
+                // | Event::MouseButtonDown { mouse_btn: MouseButton::Left, .. }
+                => {
                     let game_pos: (f32, f32) = camera.screen_to_game(mouse_state.x(), mouse_state.y());
                     println!(
                         "Mouse pos screen: ({}, {}), game: ({}, {})",
