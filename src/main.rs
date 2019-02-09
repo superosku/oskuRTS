@@ -4,10 +4,11 @@ use sdl2::image::{LoadTexture, InitFlag};
 use sdl2::pixels::Color;
 use sdl2::event::Event;
 use sdl2::keyboard::{Keycode, Scancode};
-use sdl2::mouse::MouseButton;
+use sdl2::mouse::{MouseState, MouseButton};
 use sdl2::rect::Rect;
 
 use std::time::{Duration, SystemTime, UNIX_EPOCH, Instant};
+use std::cmp;
 
 mod point;
 mod camera;
@@ -54,15 +55,37 @@ pub fn main() -> Result<(), String> {
     let start_time = Instant::now();
     let mut last_time = start_time.elapsed();
     let mut elapsed_time = 1_000_000_000;
+
+    let mut left_pressed: bool = false;
+    let mut mouse_start_game_pos: (f32, f32) = (0.0, 0.0);
+
     loop {
         // Events
-        let mut mouse_state = event_pump.mouse_state();
+        let mut mouse_state: MouseState = event_pump.mouse_state();
+        let mouse_game_pos: (f32, f32) = camera.screen_to_game(mouse_state.x(), mouse_state.y());
         let mut keyboard_state = event_pump.keyboard_state();
 
         if keyboard_state.is_scancode_pressed(Scancode::S) {camera.move_center( 0.0,  0.5)}
         if keyboard_state.is_scancode_pressed(Scancode::W) {camera.move_center( 0.0, -0.5)}
         if keyboard_state.is_scancode_pressed(Scancode::A) {camera.move_center(-0.5,  0.0)}
         if keyboard_state.is_scancode_pressed(Scancode::D) {camera.move_center( 0.5,  0.0)}
+
+        if mouse_state.left() {
+            if left_pressed == false {
+                mouse_start_game_pos = mouse_game_pos;
+            }
+            left_pressed = true;
+        } else {
+            if left_pressed == true {
+                println!("INFORMATION:");
+                for entity in entity_holder.get_entity_refs() {
+                    if entity.is_inside(mouse_game_pos, mouse_start_game_pos) {
+                        println!("Entity {} inside box", entity.id);
+                    }
+                }
+            }
+            left_pressed = false;
+        }
 
         for event in event_pump.poll_iter() {
             match event {
@@ -72,24 +95,20 @@ pub fn main() -> Result<(), String> {
                 Event::KeyDown { keycode: Some(Keycode::Left), .. } => (guy_x -= 1),
                 Event::KeyDown { keycode: Some(Keycode::Up), .. } => (guy_y -= 1),
                 Event::KeyDown { keycode: Some(Keycode::Down), .. } => (guy_y += 1),
-                // Event::KeyDown { keycode: Some(Keycode::W), .. } => (camera.move_center( 0.0, -0.5)),
-                // Event::KeyDown { keycode: Some(Keycode::S), .. } => (camera.move_center( 0.0,  0.5)),
-                // Event::KeyDown { keycode: Some(Keycode::A), .. } => (camera.move_center(-0.5,  0.0)),
-                // Event::KeyDown { keycode: Some(Keycode::D), .. } => (camera.move_center( 0.5,  0.0)),
                 Event::KeyDown { keycode: Some(Keycode::I), .. } => (camera.zoom_in()),
                 Event::KeyDown { keycode: Some(Keycode::O), .. } => (camera.zoom_out()),
                 Event::KeyDown { keycode: Some(Keycode::K), .. } => {
-                    let game_pos: (f32, f32) = camera.screen_to_game(mouse_state.x(), mouse_state.y());
+                    let game_pos: (f32, f32) = mouse_game_pos;
                     map.set_water(game_pos.0 as u32, game_pos.1 as u32);
                 },
                 Event::KeyDown { keycode: Some(Keycode::L), .. } => {
-                    let game_pos: (f32, f32) = camera.screen_to_game(mouse_state.x(), mouse_state.y());
+                    let game_pos: (f32, f32) = mouse_game_pos;
                     map.set_grass(game_pos.0 as u32, game_pos.1 as u32);
                 },
                 Event::KeyDown { keycode: Some(Keycode::N), .. }
                 // | Event::MouseButtonDown { mouse_btn: MouseButton::Left, .. }
                 => {
-                    let game_pos: (f32, f32) = camera.screen_to_game(mouse_state.x(), mouse_state.y());
+                    let game_pos: (f32, f32) = mouse_game_pos;
                     println!(
                         "Mouse pos screen: ({}, {}), game: ({}, {})",
                         mouse_state.x(),
@@ -161,6 +180,20 @@ pub fn main() -> Result<(), String> {
                         (64.0 / camera.zoom) as u32
                     )
                 ).map_err(|e| e.to_string())?;
+            }
+
+            // Draw mouse selection box
+            canvas.set_draw_color(Color::RGB(0, 0, 255));
+            if left_pressed {
+                let pos_1 = camera.game_to_screen(mouse_start_game_pos.0, mouse_start_game_pos.1);
+                let pos_2 = camera.game_to_screen(mouse_game_pos.0, mouse_game_pos.1);
+
+                canvas.draw_rect(Rect::new(
+                    cmp::min(pos_1.0 as i32, pos_2.0 as i32),
+                    cmp::min(pos_1.1 as i32, pos_2.1 as i32),
+                    (pos_2.0 - pos_1.0).abs() as u32,
+                    (pos_2.1 - pos_1.1).abs() as u32,
+                ));
             }
 
             canvas.present();

@@ -1,16 +1,20 @@
 
+use std::cmp;
+
 use super::point;
 use super::map;
 
-// #[derive(Copy, Clone)]
+
 pub struct Entity {
-    pub location: point::Point
+    pub location: point::Point,
+    pub id: u32,
 }
 
 impl Entity {
-    pub fn new(x: f32, y: f32) -> Entity {
+    pub fn new(x: f32, y: f32, id: u32) -> Entity {
         Entity {
-            location: point::Point::new(x, y)
+            location: point::Point::new(x, y),
+            id: id
         }
     }
 
@@ -30,6 +34,15 @@ impl Entity {
             return Some(move_vect);
         }
         return None
+    }
+
+    pub fn is_inside(&self, corner_1: (f32, f32), corner_2: (f32, f32)) -> bool {
+        let min_x = corner_1.0.min(corner_2.0);
+        let max_x = corner_1.0.max(corner_2.0);
+        let min_y = corner_1.1.min(corner_2.1);
+        let max_y = corner_1.1.max(corner_2.1);
+
+        return self.location.x > min_x && self.location.x < max_x && self.location.y > min_y && self.location.y < max_y
     }
 
     pub fn interact_with_map(&mut self, map: &map::Map) {

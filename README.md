@@ -26,7 +26,7 @@ Instructions
 ```
 WASD -> move the camrea
 arrows -> move the guy (deprecated)
-mouse click -> add unit to mouse position
+mouse click and drag -> select units (only debug print for now)
 N -> add unit to mouse position (hold to add quickly)
 IO -> zoom in/out
 KL -> make tile water/land

@@ -5,19 +5,20 @@ use super::point;
 
 pub struct EntityHolder {
     pub entities: Vec<entity::Entity>,
+    pub id_counter: u32,
 }
 
 impl EntityHolder {
     pub fn new() -> EntityHolder {
         EntityHolder {
-            // entities: Vec<entity::Entity>::new()
             entities: Vec::new(),
+            id_counter: 0,
         }
     }
 
     pub fn add_new_entity(&mut self, x: f32, y: f32) {
-        self.entities.push(entity::Entity::new(x, y));
-        println!("Entity added at {}, {}", x, y);
+        self.entities.push(entity::Entity::new(x, y, self.id_counter));
+        self.id_counter += 1;
     }
 
     pub fn get_entity_refs(&self) -> &Vec<entity::Entity> {
