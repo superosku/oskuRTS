@@ -77,12 +77,7 @@ pub fn main() -> Result<(), String> {
             left_pressed = true;
         } else {
             if left_pressed == true {
-                println!("INFORMATION:");
-                for entity in entity_holder.get_entity_refs() {
-                    if entity.is_inside(mouse_game_pos, mouse_start_game_pos) {
-                        println!("Entity {} inside box", entity.id);
-                    }
-                }
+                entity_holder.set_selection(mouse_game_pos, mouse_start_game_pos);
             }
             left_pressed = false;
         }
@@ -168,18 +163,19 @@ pub fn main() -> Result<(), String> {
                 .map_err(|e| e.to_string())?;
 
             // Draw entities
+            canvas.set_draw_color(Color::RGB(0, 0, 255));
             for entity in entity_holder.get_entity_refs() {
                 let screen_center_pos = camera.game_to_screen(entity.location.x, entity.location.y);
-                canvas.copy(
-                    &shadow_texture,
-                    None,
-                    Rect::new(
-                        (screen_center_pos.0 - 1.0 * 32.0 / camera.zoom) as i32,
-                        (screen_center_pos.1 - 1.0 * 32.0 / camera.zoom) as i32,
-                        (64.0 / camera.zoom) as u32,
-                        (64.0 / camera.zoom) as u32
-                    )
-                ).map_err(|e| e.to_string())?;
+                let rect = Rect::new(
+                    (screen_center_pos.0 - 1.0 * 32.0 / camera.zoom) as i32,
+                    (screen_center_pos.1 - 1.0 * 32.0 / camera.zoom) as i32,
+                    (64.0 / camera.zoom) as u32,
+                    (64.0 / camera.zoom) as u32
+                );
+                canvas.copy(&shadow_texture, None, rect).map_err(|e| e.to_string())?;
+                if entity_holder.entity_selected(&entity) {
+                    canvas.draw_rect(rect);
+                }
             }
 
             // Draw mouse selection box

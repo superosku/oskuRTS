@@ -1,10 +1,13 @@
 
+use std::collections::HashMap;
+
 use super::entity;
 use super::map;
 use super::point;
 
 pub struct EntityHolder {
     pub entities: Vec<entity::Entity>,
+    pub selected_entity_ids: HashMap<u32, bool>,
     pub id_counter: u32,
 }
 
@@ -12,8 +15,22 @@ impl EntityHolder {
     pub fn new() -> EntityHolder {
         EntityHolder {
             entities: Vec::new(),
+            selected_entity_ids: HashMap::new(),
             id_counter: 0,
         }
+    }
+
+    pub fn set_selection(&mut self, pos1: (f32, f32), pos2: (f32, f32)) {
+        self.selected_entity_ids.clear();
+        for entity in self.entities.iter() {
+            if entity.is_inside(pos1, pos2) {
+                self.selected_entity_ids.insert(entity.id, true);
+            }
+        }
+    }
+
+    pub fn entity_selected(&self, entity: &entity::Entity) -> bool {
+        self.selected_entity_ids.contains_key(&entity.id)
     }
 
     pub fn add_new_entity(&mut self, x: f32, y: f32) {
