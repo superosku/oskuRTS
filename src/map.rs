@@ -1,4 +1,6 @@
 use rand::{self, Rng};
+use std::cmp;
+
 use super::point;
 
 #[derive(Copy, Clone, PartialEq)]
@@ -45,6 +47,45 @@ impl Map {
         self.data[index] = GroundType::Grass;
     }
 
+    pub fn line_of_sight(&self, point_1: &point::Point, point_2: &point::Point) -> bool {
+        let mut min_x = point_1.x.min(point_2.x);
+        let mut min_y = point_1.y.min(point_2.y);
+        let mut max_x = point_1.x.max(point_2.x);
+        let mut max_y = point_1.y.max(point_2.y);
+
+        if min_x % 1.0 < 0.25 {
+            min_x -= 0.5
+        }
+        if min_y % 1.0 < 0.25 {
+            min_y -= 0.5
+        }
+        if max_x % 1.0 > 0.75 {
+            max_x += 0.5
+        }
+        if max_y % 1.0 > 0.75 {
+            max_y += 0.5
+        }
+
+        /*
+        let min_x = cmp::min(point_1.x as i32, point_2.x as i32);
+        let max_x = cmp::max(point_1.x as i32, point_2.x as i32);
+        let min_y = cmp::min(point_1.y as i32, point_2.y as i32);
+        let max_y = cmp::max(point_1.y as i32, point_2.y as i32);
+        */
+
+        // println!("  Checking point moveability area ({} {}) ({} {})", min_x, min_y, max_x, max_y);
+        for x in (min_x as i32)..(max_x as i32 + 1) {
+            for y in (min_y as i32)..(max_y as i32 + 1) {
+                // println!("    Point moveable {} {} {}", x, y, self.point_moveable((x, y)));
+                if !self.point_moveable((x,y)) {
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
+
     pub fn get_at(&self, x: u32, y: u32) -> GroundType {
         if x < 0 || y < 0 || x >= self.width || y >= self.height {
             return GroundType::Empty
@@ -55,14 +96,14 @@ impl Map {
 
     pub fn point_moveable(&self, point: (i32, i32)) -> bool {
         if point.0 < 0 || point.1 < 0 {
-            return true;
+            return false;
         }
         // println!("Checking {} {} {} {}", point.x, point.y, point.x as u32, point.y as u32);
         let ground_type = self.get_at(
             point.0 as u32,
             point.1 as u32
         );
-        ground_type != GroundType::Water
+        ground_type == GroundType::Grass
     }
 }
 

@@ -34,9 +34,17 @@ impl Vector {
             self.y * times
         )
     }
+
+    pub fn negated(&self) -> Vector {
+        Vector::new(
+            -self.x,
+            -self.y
+        )
+    }
 }
 
 
+#[derive(Debug)]
 pub struct Point {
     pub x: f32,
     pub y: f32,

@@ -68,16 +68,8 @@ impl Camera {
     pub fn game_to_screen(&self, x: f32, y: f32) -> (f32, f32) {
         let tile_size: f32 = DEFAULT_TILE_SIZE as f32;
 
-        let screen_x = (
-            self.window_w as f32 / 2.0 + 
-            (x - self.center_x) * (tile_size / self.zoom) // -
-            // scale_factor * tile_size / 2.0 / self.zoom
-        );
-        let screen_y = (
-            self.window_h as f32 / 2.0 +
-            ( y - self.center_y) * (tile_size / self.zoom) // -
-            // scale_factor * tile_size / 2.0 / self.zoom
-        );
+        let screen_x = self.window_w as f32 / 2.0 + (x - self.center_x) * (tile_size / self.zoom);
+        let screen_y = self.window_h as f32 / 2.0 + ( y - self.center_y) * (tile_size / self.zoom);
         (screen_x, screen_y)
     }
 

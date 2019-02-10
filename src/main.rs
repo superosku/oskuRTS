@@ -7,7 +7,7 @@ use sdl2::keyboard::{Keycode, Scancode};
 use sdl2::mouse::{MouseState, MouseButton};
 use sdl2::rect::Rect;
 
-use std::time::{Duration, SystemTime, UNIX_EPOCH, Instant};
+use std::time::Instant;
 use std::cmp;
 
 mod point;
@@ -49,7 +49,7 @@ pub fn main() -> Result<(), String> {
     let mut guy_y = 0;
 
     let mut camera: camera::Camera = camera::Camera::new(600, 600);
-    let mut map: map::Map = map::Map::new_random(100, 100);
+    let mut map: map::Map = map::Map::new_random(200, 200);
     let mut entity_holder: entity_holder::EntityHolder = entity_holder::EntityHolder::new();
 
     let start_time = Instant::now();
@@ -59,11 +59,13 @@ pub fn main() -> Result<(), String> {
     let mut left_pressed: bool = false;
     let mut mouse_start_game_pos: (f32, f32) = (0.0, 0.0);
 
+    // println!("HINT SET MAYBE, {}", sdl2::hint::set("SDL_HINT_RENDER_SCALE_QUALITY", "1"));
+
     loop {
         // Events
-        let mut mouse_state: MouseState = event_pump.mouse_state();
+        let mouse_state: MouseState = event_pump.mouse_state();
         let mouse_game_pos: (f32, f32) = camera.screen_to_game(mouse_state.x(), mouse_state.y());
-        let mut keyboard_state = event_pump.keyboard_state();
+        let keyboard_state = event_pump.keyboard_state();
 
         if keyboard_state.is_scancode_pressed(Scancode::S) {camera.move_center( 0.0,  0.5)}
         if keyboard_state.is_scancode_pressed(Scancode::W) {camera.move_center( 0.0, -0.5)}
@@ -100,6 +102,10 @@ pub fn main() -> Result<(), String> {
                     let game_pos: (f32, f32) = mouse_game_pos;
                     map.set_grass(game_pos.0 as u32, game_pos.1 as u32);
                 },
+                Event::MouseButtonDown { mouse_btn: MouseButton::Right, .. } => {
+                    println!("Ordering units to go to {:?}", mouse_game_pos);
+                    entity_holder.order_selected_units_to(&map, mouse_game_pos);
+                },
                 Event::KeyDown { keycode: Some(Keycode::N), .. }
                 // | Event::MouseButtonDown { mouse_btn: MouseButton::Left, .. }
                 => {
@@ -134,6 +140,7 @@ pub fn main() -> Result<(), String> {
         }
 
         // Game handling
+        entity_holder.entities_ai_stuff(&map);
         entity_holder.entities_interact_with_each_other();
         entity_holder.entities_interact_with_map(&map);
 
@@ -174,7 +181,7 @@ pub fn main() -> Result<(), String> {
                 );
                 canvas.copy(&shadow_texture, None, rect).map_err(|e| e.to_string())?;
                 if entity_holder.entity_selected(&entity) {
-                    canvas.draw_rect(rect);
+                    canvas.draw_rect(rect)?;
                 }
             }
 
@@ -189,7 +196,7 @@ pub fn main() -> Result<(), String> {
                     cmp::min(pos_1.1 as i32, pos_2.1 as i32),
                     (pos_2.0 - pos_1.0).abs() as u32,
                     (pos_2.1 - pos_1.1).abs() as u32,
-                ));
+                ))?;
             }
 
             canvas.present();
@@ -200,9 +207,9 @@ pub fn main() -> Result<(), String> {
         last_time = start_time.elapsed();
         let now_stamp = (last_time.as_secs() * 1_000_000_000) + (last_time.subsec_nanos()) as u64;
 
-        let optimal_sleep_time = 1_000_000_000u64 / 60;
+        // let optimal_sleep_time = 1_000_000_000u64 / 60;
 
-        elapsed_time = (now_stamp - last_stamp); // * 1_000_000;
+        elapsed_time = now_stamp - last_stamp;
 
         // ::std::thread::sleep(Duration::new(0, sleep_time as u32));
         tick += 1;
