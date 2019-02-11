@@ -40,13 +40,9 @@ pub fn main() -> Result<(), String> {
     let mut tick: u32 = 0;
 
     let texture_creator = canvas.texture_creator();
-    let person_texture = texture_creator.load_texture("src/images/ukko.png")?;
     let land_texture = texture_creator.load_texture("src/images/maa.png")?;
     let water_texture = texture_creator.load_texture("src/images/vesi.png")?;
     let shadow_texture = texture_creator.load_texture("src/images/shadow.png")?;
-
-    let mut guy_x = 0;
-    let mut guy_y = 0;
 
     let mut camera: camera::Camera = camera::Camera::new(600, 600);
     let mut map: map::Map = map::Map::new_random(200, 200);
@@ -88,12 +84,12 @@ pub fn main() -> Result<(), String> {
             match event {
                 Event::Quit { .. } => return Ok(()),
                 Event::KeyDown { keycode: Some(Keycode::Escape), .. } => return Ok(()),
-                Event::KeyDown { keycode: Some(Keycode::Right), .. } => (guy_x += 1),
-                Event::KeyDown { keycode: Some(Keycode::Left), .. } => (guy_x -= 1),
-                Event::KeyDown { keycode: Some(Keycode::Up), .. } => (guy_y -= 1),
-                Event::KeyDown { keycode: Some(Keycode::Down), .. } => (guy_y += 1),
                 Event::KeyDown { keycode: Some(Keycode::I), .. } => (camera.zoom_in()),
                 Event::KeyDown { keycode: Some(Keycode::O), .. } => (camera.zoom_out()),
+                Event::MouseWheel { .. } => {
+                    println!("Scroll happened");
+                    // println!("Scroll happened, {} {}", x, y);
+                },
                 Event::KeyDown { keycode: Some(Keycode::K), .. } => {
                     let game_pos: (f32, f32) = mouse_game_pos;
                     map.set_water(game_pos.0 as u32, game_pos.1 as u32);
@@ -163,11 +159,6 @@ pub fn main() -> Result<(), String> {
                     ).map_err(|e| e.to_string())?;
                 }
             }
-
-            // Draw guy
-            canvas
-                .copy(&person_texture, None, camera.game_to_rect_i(guy_x, guy_y))
-                .map_err(|e| e.to_string())?;
 
             // Draw entities
             canvas.set_draw_color(Color::RGB(0, 0, 255));

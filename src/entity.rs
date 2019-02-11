@@ -61,7 +61,7 @@ impl Entity {
 
     pub fn set_path(&mut self, path: VecDeque<point::Point>) {
         self.path = path;
-        println!("Entity at {:?} got new path queue {:?}", self.location, self.path);
+        // println!("Entity at {:?} got new path queue {:?}", self.location, self.path);
     }
 
     pub fn interact_with(&self, other: &Entity) -> Option<point::Vector> {
