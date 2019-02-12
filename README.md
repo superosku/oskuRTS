@@ -24,12 +24,13 @@ cargo build --release && ./target/release/rust-game
 Instructions
 
 ```
-WASD -> move the camrea
-arrows -> move the guy (deprecated)
-mouse click and drag -> select units
-N -> add unit to mouse position (hold to add quickly)
-IO -> zoom in/out
-KL -> make tile water/land
+WASD -> Move the camrea
+mouse left click and drag -> Select units
+mouse right click -> Order selected units to go to mouse location
+P -> Toggle debug view
+N -> Add unit to mouse position (hold to add many quickly)
+IO -> Zoom in/out
+KL -> Make tile water/land
 ```
 
 Features
@@ -38,12 +39,14 @@ Features
  - Zooming and other camera handling
  - Unit collision detection with other units and the map
  - Selecting units
+ - Path finding for selected group
  - Much more
 
 Todo next
 
- - Rename entity to unit in code
- - Handle units that end up inside blocked tiles better
- - Drawing guy graphics for units
- - Path finding for selected group
+ - Drawing graphics for units
+ - Fix issues with path finding and large unit groups behaving funnyly
+ - Different kind of units
+ - Different teams and separate colors for teams units
+ - Units attacking other team units
 

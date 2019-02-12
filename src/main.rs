@@ -5,7 +5,7 @@ use sdl2::pixels::Color;
 use sdl2::event::Event;
 use sdl2::keyboard::{Keycode, Scancode};
 use sdl2::mouse::{MouseState, MouseButton};
-use sdl2::rect::Rect;
+use sdl2::rect::{Rect, Point};
 
 use std::time::Instant;
 use std::cmp;
@@ -55,6 +55,8 @@ pub fn main() -> Result<(), String> {
     let mut left_pressed: bool = false;
     let mut mouse_start_game_pos: (f32, f32) = (0.0, 0.0);
 
+    let mut debug_enabled = false;
+
     // println!("HINT SET MAYBE, {}", sdl2::hint::set("SDL_HINT_RENDER_SCALE_QUALITY", "1"));
 
     loop {
@@ -86,6 +88,7 @@ pub fn main() -> Result<(), String> {
                 Event::KeyDown { keycode: Some(Keycode::Escape), .. } => return Ok(()),
                 Event::KeyDown { keycode: Some(Keycode::I), .. } => (camera.zoom_in()),
                 Event::KeyDown { keycode: Some(Keycode::O), .. } => (camera.zoom_out()),
+                Event::KeyDown { keycode: Some(Keycode::P), .. } => {debug_enabled = !debug_enabled;},
                 Event::MouseWheel { .. } => {
                     println!("Scroll happened");
                     // println!("Scroll happened, {} {}", x, y);
@@ -173,6 +176,19 @@ pub fn main() -> Result<(), String> {
                 canvas.copy(&shadow_texture, None, rect).map_err(|e| e.to_string())?;
                 if entity_holder.entity_selected(&entity) {
                     canvas.draw_rect(rect)?;
+                }
+                if debug_enabled {
+                    match &entity.waypoint {
+                        Some(w) => {
+                            let screen_start_pos = camera.game_to_screen(entity.location.x, entity.location.y);
+                            let screen_end_pos = camera.game_to_screen(w.x, w.y);
+                            canvas.draw_line(
+                                Point::new(screen_start_pos.0 as i32, screen_start_pos.1 as i32),
+                                Point::new(screen_end_pos.0 as i32, screen_end_pos.1 as i32)
+                            );
+                        },
+                        _ => {}
+                    }
                 }
             }
 

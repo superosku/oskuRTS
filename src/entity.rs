@@ -26,34 +26,43 @@ impl Entity {
     }
 
     pub fn is_inside(&self, corner_1: (f32, f32), corner_2: (f32, f32)) -> bool {
-        let min_x = corner_1.0.min(corner_2.0);
-        let max_x = corner_1.0.max(corner_2.0);
-        let min_y = corner_1.1.min(corner_2.1);
-        let max_y = corner_1.1.max(corner_2.1);
+        let min_x = corner_1.0.min(corner_2.0) - 0.25;
+        let min_y = corner_1.1.min(corner_2.1) - 0.25;
+        let max_x = corner_1.0.max(corner_2.0) + 0.25;
+        let max_y = corner_1.1.max(corner_2.1) + 0.25;
 
         return self.location.x > min_x && self.location.x < max_x && self.location.y > min_y && self.location.y < max_y
     }
 
     pub fn ai_stuff(&mut self, map: &map::Map) {
-
-        let mut matched = false;
-        match self.path.front() {
-            Some(point) => {
-                if map.line_of_sight(&self.location, point) {
-                    // println!("FOUND LINE OF SIGHT STUFF");
-                    matched = true;
-                    self.waypoint = Some(point::Point::new(point.x, point.y));
-                }
-            },
-            _ => {}
-        }
-        if matched {
+        'outer: loop {
+            // let mut matched = false;
+            match self.path.front() {
+                Some(point) => {
+                    if map.line_of_sight(&self.location, point) {
+                        // println!("FOUND LINE OF SIGHT STUFF");
+                        // matched = true;
+                        self.waypoint = Some(point::Point::new(point.x, point.y));
+                    } else {
+                        break 'outer;
+                    }
+                },
+                _ => {break 'outer;}
+            }
+            //if matched {
             self.path.pop_front();
+            //}
         }
 
         match &self.waypoint {
             Some(point) => {
-                self.location.add(&self.location.dist_vect(point).normalized().negated().multiplied(0.04));
+                let vec_to_waypoint = self.location.dist_vect(point);
+                if vec_to_waypoint.length() < 0.1 && self.path.len() == 0 { // Goal reached
+                    self.location = point::Point::new(point.x, point.y);
+                    self.waypoint = None;
+                } else {
+                    self.location.add(&vec_to_waypoint.normalized().negated().multiplied(0.04));
+                }
             }
             _ => {}
         }
@@ -87,10 +96,19 @@ impl Entity {
 
         // Inside box?
         if !map.point_moveable(int_loc) {
-            self.location = point::Point::new(
-                self.location.x + 0.0,
-                self.location.y + 1.0 
-            )
+            if abs_loc_x_rem > abs_loc_y_rem {
+                if loc_x_rem > 0.5 {
+                    self.location.x += 0.5;
+                } else {
+                    self.location.x -= 0.5;
+                }
+            } else {
+                if loc_y_rem > 0.5 {
+                    self.location.y += 0.5;
+                } else {
+                    self.location.y -= 0.5;
+                }
+            }
         }
 
         let treshold = 0.25;
