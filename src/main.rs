@@ -148,6 +148,9 @@ pub fn main() -> Result<(), String> {
             canvas.clear();
 
             // Draw ground
+            let tile_size = camera.get_tile_size();
+            let first_screen_pos_f = camera.game_to_screen(0.0, 0.0);
+            let first_screen_pos = (first_screen_pos_f.0 as i32, first_screen_pos_f.1 as i32);
             for x in 0..map.width {
                 for y in 0..map.height {
                     let texture_pointer = match map.get_at(x, y) {
@@ -158,14 +161,20 @@ pub fn main() -> Result<(), String> {
                     canvas.copy(
                         texture_pointer,
                         None,
-                        camera.game_to_rect_i(x as i32, y as i32)
+                        Rect::new(
+                            first_screen_pos.0 + (x * tile_size) as i32,
+                            first_screen_pos.1 + (y * tile_size) as i32,
+                            tile_size,
+                            tile_size,
+                        )
+                        //camera.game_to_rect_i(x as i32, y as i32)
                     ).map_err(|e| e.to_string())?;
                 }
             }
 
             // Draw entities
-            canvas.set_draw_color(Color::RGB(0, 0, 255));
             for entity in entity_holder.get_entity_refs() {
+                canvas.set_draw_color(Color::RGB(0, 0, 255));
                 let screen_center_pos = camera.game_to_screen(entity.location.x, entity.location.y);
                 let rect = Rect::new(
                     (screen_center_pos.0 - 1.0 * 32.0 / camera.zoom) as i32,
@@ -176,18 +185,24 @@ pub fn main() -> Result<(), String> {
                 canvas.copy(&shadow_texture, None, rect).map_err(|e| e.to_string())?;
                 if entity_holder.entity_selected(&entity) {
                     canvas.draw_rect(rect)?;
-                }
-                if debug_enabled {
-                    match &entity.waypoint {
-                        Some(w) => {
-                            let screen_start_pos = camera.game_to_screen(entity.location.x, entity.location.y);
-                            let screen_end_pos = camera.game_to_screen(w.x, w.y);
-                            canvas.draw_line(
-                                Point::new(screen_start_pos.0 as i32, screen_start_pos.1 as i32),
-                                Point::new(screen_end_pos.0 as i32, screen_end_pos.1 as i32)
-                            );
-                        },
-                        _ => {}
+                    if debug_enabled {
+                        match &entity.waypoint {
+                            Some(w) => {
+                                let screen_start_pos = camera.game_to_screen(entity.location.x, entity.location.y);
+                                let screen_end_pos = camera.game_to_screen(w.x, w.y);
+                                canvas.draw_line(
+                                    Point::new(screen_start_pos.0 as i32, screen_start_pos.1 as i32),
+                                    Point::new(screen_end_pos.0 as i32, screen_end_pos.1 as i32)
+                                );
+                            },
+                            _ => {}
+                        }
+                        canvas.set_draw_color(Color::RGB(255, 0, 255));
+                        let stuff: Vec<Point> = entity.path.iter().map(|point| {
+                            let screen_point= camera.game_to_screen(point.x, point.y);
+                            return Point::new(screen_point.0 as i32, screen_point.1 as i32);
+                        }).collect();
+                        canvas.draw_lines(stuff.as_slice());
                     }
                 }
             }

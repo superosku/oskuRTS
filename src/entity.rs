@@ -35,6 +35,20 @@ impl Entity {
     }
 
     pub fn ai_stuff(&mut self, map: &map::Map) {
+        // Set the first waypoint if not yet set
+        // So basically this: if (not self.waypoint) and (self.path)
+        match &self.waypoint {
+            Some(point) => {},
+            _ => {
+                match self.path.front() {
+                    Some(point) => {
+                        self.waypoint = Some(point::Point::new(point.x, point.y));
+                    },
+                    _ => {}
+                }
+            }
+        }
+        // Check if we can take next waypoint
         'outer: loop {
             // let mut matched = false;
             match self.path.front() {

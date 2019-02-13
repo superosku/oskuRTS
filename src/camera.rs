@@ -1,4 +1,4 @@
-use sdl2::rect::Rect;
+    use sdl2::rect::Rect;
 
 const DEFAULT_TILE_SIZE: i32 = 128;
 
@@ -28,17 +28,23 @@ impl Camera {
 
     pub fn zoom_in(&mut self) {
         if self.zoom > 1.0 {
-            self.zoom -= 1.0;
+            self.zoom /= 2.0;
         }
     }
 
     pub fn zoom_out(&mut self) {
-        self.zoom += 1.0;
+        if self.zoom < 10.0 {
+            self.zoom *= 2.0;
+        }
     }
 
     pub fn move_center(&mut self, x: f32, y: f32) {
         self.center_y += y;
         self.center_x += x;
+    }
+
+    pub fn get_tile_size(&self) -> u32 {
+        return (DEFAULT_TILE_SIZE as f32 / self.zoom as f32) as u32;
     }
 
     pub fn game_to_rect(&self, x: f32, y: f32) -> Rect {

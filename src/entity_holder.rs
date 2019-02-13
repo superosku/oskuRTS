@@ -53,6 +53,7 @@ impl EntityHolder {
         for point in distinct_points.iter() {
             let mut path: Vec<(i32, i32)> = Vec::new();
             let mut old_point: &(i32, i32) = point;
+            path.push(*old_point);
             loop {
                 let next_point: &(i32, i32) = match search_tree.get(old_point) {
                     Some(x) => x,
