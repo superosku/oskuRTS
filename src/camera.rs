@@ -39,8 +39,8 @@ impl Camera {
     }
 
     pub fn move_center(&mut self, x: f32, y: f32) {
-        self.center_y += y;
-        self.center_x += x;
+        self.center_y += y * self.zoom * 0.25;
+        self.center_x += x * self.zoom * 0.25;
     }
 
     pub fn get_tile_size(&self) -> u32 {

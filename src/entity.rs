@@ -9,6 +9,7 @@ pub struct Entity {
     pub id: u32,
     pub waypoint: Option<point::Point>,
     pub path: VecDeque<point::Point>,
+    pub orientation: u32,
 }
 
 impl Entity {
@@ -17,7 +18,8 @@ impl Entity {
             location: point::Point::new(x, y),
             id: id,
             waypoint: None,
-            path: VecDeque::new()
+            path: VecDeque::new(),
+            orientation: id % 8,
         }
     }
 
@@ -32,6 +34,26 @@ impl Entity {
         let max_y = corner_1.1.max(corner_2.1) + 0.25;
 
         return self.location.x > min_x && self.location.x < max_x && self.location.y > min_y && self.location.y < max_y
+    }
+
+    fn set_orientation_from_vector(&mut self, vector: &point::Vector) {
+        let quarter_pi = 0.78539816;
+        let eight_pi = 0.39269908;
+
+        let mut angle = vector.x.atan2(vector.y);
+        angle += quarter_pi * 4.0;
+        angle -= eight_pi;
+
+        let mut orientation_guess = 0;
+        loop {
+            if angle < 0.0 {
+                break;
+            }
+            
+            angle -= quarter_pi;
+            orientation_guess += 1;
+        }
+        self.orientation = orientation_guess % 8;
     }
 
     pub fn ai_stuff(&mut self, map: &map::Map) {
@@ -75,7 +97,9 @@ impl Entity {
                     self.location = point::Point::new(point.x, point.y);
                     self.waypoint = None;
                 } else {
-                    self.location.add(&vec_to_waypoint.normalized().negated().multiplied(0.04));
+                    let normalized = vec_to_waypoint.normalized();
+                    self.location.add(&normalized.negated().multiplied(0.04));
+                    self.set_orientation_from_vector(&normalized);
                 }
             }
             _ => {}

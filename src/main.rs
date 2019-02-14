@@ -42,7 +42,10 @@ pub fn main() -> Result<(), String> {
     let texture_creator = canvas.texture_creator();
     let land_texture = texture_creator.load_texture("src/images/maa.png")?;
     let water_texture = texture_creator.load_texture("src/images/vesi.png")?;
+    let forest_texture = texture_creator.load_texture("src/images/tree.png")?;
     let shadow_texture = texture_creator.load_texture("src/images/shadow.png")?;
+    //let unit_texture = texture_creator.load_texture("src/images/ukko.png")?;
+    let unit_texture = texture_creator.load_texture("src/images/guy_roster.png")?;
 
     let mut camera: camera::Camera = camera::Camera::new(600, 600);
     let mut map: map::Map = map::Map::new_random(200, 200);
@@ -142,6 +145,7 @@ pub fn main() -> Result<(), String> {
         entity_holder.entities_ai_stuff(&map);
         entity_holder.entities_interact_with_each_other();
         entity_holder.entities_interact_with_map(&map);
+        entity_holder.sort_entities();
 
         { // Draw
             canvas.set_draw_color(Color::RGB(55, 55, 55));
@@ -156,6 +160,7 @@ pub fn main() -> Result<(), String> {
                     let texture_pointer = match map.get_at(x, y) {
                         map::GroundType::Grass => &land_texture,
                         map::GroundType::Water => &water_texture,
+                        map::GroundType::Forest=> &forest_texture,
                         _ => &shadow_texture
                     };
                     canvas.copy(
@@ -176,34 +181,47 @@ pub fn main() -> Result<(), String> {
             for entity in entity_holder.get_entity_refs() {
                 canvas.set_draw_color(Color::RGB(0, 0, 255));
                 let screen_center_pos = camera.game_to_screen(entity.location.x, entity.location.y);
+                let tile_size = (64.0 / camera.zoom) as u32;
                 let rect = Rect::new(
                     (screen_center_pos.0 - 1.0 * 32.0 / camera.zoom) as i32,
                     (screen_center_pos.1 - 1.0 * 32.0 / camera.zoom) as i32,
-                    (64.0 / camera.zoom) as u32,
-                    (64.0 / camera.zoom) as u32
+                    tile_size,
+                    tile_size,
+                );
+                let unit_texture_rect = Rect::new(
+                    (screen_center_pos.0 - 1.0 * 32.0 / camera.zoom) as i32,
+                    (screen_center_pos.1 - 1.0 * 32.0 / camera.zoom) as i32 - tile_size as i32,
+                    tile_size,
+                    tile_size * 2,
                 );
                 canvas.copy(&shadow_texture, None, rect).map_err(|e| e.to_string())?;
+                canvas.copy(
+                    &unit_texture,
+                    Rect::new(64 * entity.orientation as i32,0,64,128),
+                    unit_texture_rect
+                )?;
+
                 if entity_holder.entity_selected(&entity) {
                     canvas.draw_rect(rect)?;
-                    if debug_enabled {
-                        match &entity.waypoint {
-                            Some(w) => {
-                                let screen_start_pos = camera.game_to_screen(entity.location.x, entity.location.y);
-                                let screen_end_pos = camera.game_to_screen(w.x, w.y);
-                                canvas.draw_line(
-                                    Point::new(screen_start_pos.0 as i32, screen_start_pos.1 as i32),
-                                    Point::new(screen_end_pos.0 as i32, screen_end_pos.1 as i32)
-                                );
-                            },
-                            _ => {}
-                        }
-                        canvas.set_draw_color(Color::RGB(255, 0, 255));
-                        let stuff: Vec<Point> = entity.path.iter().map(|point| {
-                            let screen_point= camera.game_to_screen(point.x, point.y);
-                            return Point::new(screen_point.0 as i32, screen_point.1 as i32);
-                        }).collect();
-                        canvas.draw_lines(stuff.as_slice());
+                }
+                if debug_enabled {
+                    match &entity.waypoint {
+                        Some(w) => {
+                            let screen_start_pos = camera.game_to_screen(entity.location.x, entity.location.y);
+                            let screen_end_pos = camera.game_to_screen(w.x, w.y);
+                            canvas.draw_line(
+                                Point::new(screen_start_pos.0 as i32, screen_start_pos.1 as i32),
+                                Point::new(screen_end_pos.0 as i32, screen_end_pos.1 as i32)
+                            );
+                        },
+                        _ => {}
                     }
+                    canvas.set_draw_color(Color::RGB(255, 0, 255));
+                    let stuff: Vec<Point> = entity.path.iter().map(|point| {
+                        let screen_point= camera.game_to_screen(point.x, point.y);
+                        return Point::new(screen_point.0 as i32, screen_point.1 as i32);
+                    }).collect();
+                    canvas.draw_lines(stuff.as_slice());
                 }
             }
 

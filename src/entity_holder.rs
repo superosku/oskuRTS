@@ -99,6 +99,17 @@ impl EntityHolder {
         self.id_counter += 1;
     }
 
+    pub fn sort_entities(&mut self) {
+        if self.entities.len() < 2 {
+            return
+        }
+        for i in 0..(self.entities.len() - 2) {
+            if self.entities[i].location.y > self.entities[i + 1].location.y {
+                self.entities.swap(i, i+1);
+            }
+        }
+    }
+
     pub fn get_entity_refs(&self) -> &Vec<entity::Entity> {
         return &self.entities
     }

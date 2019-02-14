@@ -7,7 +7,8 @@ use super::point;
 pub enum GroundType {
     Empty,
     Grass,
-    Water
+    Water,
+    Forest,
 }
 
 pub struct Map {
@@ -27,10 +28,12 @@ impl Map {
 
         let mut randomizer = rand::thread_rng();
         for n in 0..data_size {
-            let randint: u32 = randomizer.gen_range(0,7);
-            if randint % 7 == 0 {
-            // if n % 3 == 0 {
+            let randint: u32 = randomizer.gen_range(0,15);
+            if randint == 7 {
                 new_map.data[n as usize] = GroundType::Water;
+            }
+            if randint < 2 {
+                new_map.data[n as usize] = GroundType::Forest;
             }
         }
 
