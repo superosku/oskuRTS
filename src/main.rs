@@ -16,6 +16,7 @@ mod map;
 mod path_finder;
 mod entity;
 mod entity_holder;
+mod noise;
 
 
 pub fn main() -> Result<(), String> {

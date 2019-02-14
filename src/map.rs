@@ -2,6 +2,7 @@ use rand::{self, Rng};
 use std::cmp;
 
 use super::point;
+use super::noise;
 
 #[derive(Copy, Clone, PartialEq)]
 pub enum GroundType {
@@ -26,17 +27,43 @@ impl Map {
             data: vec![GroundType::Grass; (data_size) as usize] // Vec::new()
         };
 
-        let mut randomizer = rand::thread_rng();
+        let mut water_noise1 = noise::PerlinNoise::new(3);
+        let mut water_noise2 = noise::PerlinNoise::new(6);
+        let mut water_noise3 = noise::PerlinNoise::new(9);
+
+        let mut tree_noise1 = noise::PerlinNoise::new(2);
+        let mut tree_noise2 = noise::PerlinNoise::new(4);
+        let mut tree_noise3 = noise::PerlinNoise::new(8);
+
         for n in 0..data_size {
-            let randint: u32 = randomizer.gen_range(0,15);
-            if randint == 7 {
-                new_map.data[n as usize] = GroundType::Water;
-            }
-            if randint < 2 {
+            let x = n % width;
+            let y = n / width;
+
+            let noise_value = (
+                tree_noise1.value_at(x as i32, y as i32) * 1.0 +
+                tree_noise2.value_at(x as i32, y as i32) * 2.0 +
+                tree_noise3.value_at(x as i32, y as i32) * 4.0
+            );
+
+            if noise_value < -0.7 {
                 new_map.data[n as usize] = GroundType::Forest;
             }
         }
 
+        for n in 0..data_size {
+            let x = n % width;
+            let y = n / width;
+
+            let noise_value = (
+                water_noise1.value_at(x as i32, y as i32) * 1.0 +
+                water_noise2.value_at(x as i32, y as i32) * 2.0 +
+                water_noise3.value_at(x as i32, y as i32) * 4.0
+            );
+
+            if noise_value < -0.7 {
+                new_map.data[n as usize] = GroundType::Water;
+            }
+        }
         return new_map;
     }
 
