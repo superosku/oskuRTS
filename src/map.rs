@@ -124,6 +124,17 @@ impl Map {
         return self.data[index];
     }
 
+    pub fn closest_moveable_point(&self, x: i32, y: i32) -> (i32, i32) {
+        for i in 1..10 {
+            if self.point_moveable((x + i, y)) {return (x + i, y);};
+            if self.point_moveable((x, y + i)) {return (x, y + i);};
+            if self.point_moveable((x - i, y)) {return (x - i, y);};
+            if self.point_moveable((x, y - i)) {return (x, y - i);};
+        }
+
+        (x, y)
+    }
+
     pub fn point_moveable(&self, point: (i32, i32)) -> bool {
         if point.0 < 0 || point.1 < 0 {
             return false;

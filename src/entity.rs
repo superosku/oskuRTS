@@ -134,19 +134,9 @@ impl Entity {
 
         // Inside box?
         if !map.point_moveable(int_loc) {
-            if abs_loc_x_rem > abs_loc_y_rem {
-                if loc_x_rem > 0.5 {
-                    self.location.x += 0.5;
-                } else {
-                    self.location.x -= 0.5;
-                }
-            } else {
-                if loc_y_rem > 0.5 {
-                    self.location.y += 0.5;
-                } else {
-                    self.location.y -= 0.5;
-                }
-            }
+            let closest_moveable_point = map.closest_moveable_point(int_loc.0, int_loc.1);
+            self.location.x = closest_moveable_point.0 as f32 + 0.5;
+            self.location.y = closest_moveable_point.1 as f32 + 0.5;
         }
 
         let treshold = 0.25;
