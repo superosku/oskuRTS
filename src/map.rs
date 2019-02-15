@@ -123,7 +123,7 @@ impl Map {
 
     pub fn line_of_sight_fat(&self, point_1: &point::Point, point_2: &point::Point, radius: f32) -> bool {
         let normal_vec = point_2.dist_to(point_1).normalized();
-        let ninety_degree_vec = point::Vector::new(normal_vec.x, -normal_vec.y);
+        let ninety_degree_vec = point::Vector::new(normal_vec.y, -normal_vec.x);
 
         if point_1.x as i32 == point_2.x as i32 && point_1.y as i32 == point_2.y as i32 &&
             self.point_moveable((point_1.x as i32, point_1.y as i32)) {
@@ -133,19 +133,15 @@ impl Map {
         return 
             self.line_of_sight(
                 &point_1
-                .added(&ninety_degree_vec.multiplied(radius))
-                .added(&normal_vec.multiplied(radius)),
+                .added(&ninety_degree_vec.multiplied(radius)),
                 &point_2
-                .added(&ninety_degree_vec.multiplied(radius))
-                .added(&normal_vec.multiplied(radius)),
+                .added(&ninety_degree_vec.multiplied(radius)),
             ) &&
             self.line_of_sight(
                 &point_1
-                .added(&ninety_degree_vec.multiplied(-radius))
-                .added(&normal_vec.multiplied(-radius)),
+                .added(&ninety_degree_vec.multiplied(-radius)),
                 &point_2
-                .added(&ninety_degree_vec.multiplied(-radius))
-                .added(&normal_vec.multiplied(-radius)),
+                .added(&ninety_degree_vec.multiplied(-radius)),
             )
     }
 

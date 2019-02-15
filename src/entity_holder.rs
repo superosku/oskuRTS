@@ -77,12 +77,13 @@ impl EntityHolder {
                     entity.location.x as i32 == point.0 &&
                     entity.location.y as i32 == point.1
                 {
-                    let mut path_queue = VecDeque::new();
+                    let mut path_queue = Vec::new();
 
                     for p in path.iter() {
-                        path_queue.push_back(point::Point::new(p.0 as f32 + 0.5, p.1 as f32 + 0.5));
+                        // path_queue.push_back(point::Point::new(p.0 as f32 + 0.5, p.1 as f32 + 0.5));
+                        path_queue.push(point::Point::new(p.0 as f32 + 0.5, p.1 as f32 + 0.5));
                     }
-                    path_queue.push_back(point::Point::new(end_point.0 as f32, end_point.1 as f32));
+                    path_queue.push(point::Point::new(end_point.0 as f32, end_point.1 as f32));
 
                     entity.set_path(path_queue)
                 }

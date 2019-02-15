@@ -7,8 +7,11 @@ use std::collections::VecDeque;
 pub struct Entity {
     pub location: point::Point,
     pub id: u32,
-    pub waypoint: Option<point::Point>,
-    pub path: VecDeque<point::Point>,
+
+    // pub waypoint: Option<point::Point>,
+    pub waypoint_index: u32,
+    pub path: Vec<point::Point>,
+
     pub orientation: u32,
 }
 
@@ -17,8 +20,11 @@ impl Entity {
         Entity {
             location: point::Point::new(x, y),
             id: id,
-            waypoint: None,
-            path: VecDeque::new(),
+
+            // waypoint: None,
+            waypoint_index: 0,
+            path: Vec::new(),
+
             orientation: id % 8,
         }
     }
@@ -56,54 +62,74 @@ impl Entity {
         self.orientation = orientation_guess % 8;
     }
 
+    pub fn get_waypoint(&self) -> Option<&point::Point> {
+        match self.path.get(self.waypoint_index as usize) {
+            Some(point) => {return Some(&point)}
+            _ => {}
+        }
+        return None
+    }
+
     pub fn ai_stuff(&mut self, map: &map::Map) {
         // Set the first waypoint if not yet set
         // So basically this: if (not self.waypoint) and (self.path)
-        match &self.waypoint {
-            Some(_point) => {},
-            _ => {
-                match self.path.front() {
-                    Some(point) => {
-                        self.waypoint = Some(point::Point::new(point.x, point.y));
-                    },
-                    _ => {}
-                }
-            }
+        
+        if self.path.len() == 0 {
+            return;
         }
-        // Check if we can take next waypoint
+
+        // Do this until next point is reachable
         'outer: loop {
-            match self.path.front() {
+            match self.path.get((self.waypoint_index + 1) as usize) {
                 Some(point) => {
                     if map.line_of_sight_fat(&self.location, point, 0.25) {
-                        self.waypoint = Some(point::Point::new(point.x, point.y));
+                        self.waypoint_index += 1;
                     } else {
                         break 'outer;
                     }
                 },
-                _ => {break 'outer;}
+                _ => {break 'outer}
             }
-            self.path.pop_front();
+        }
+        // Back off in point queue if point is not reachable anymore
+        'outer: loop {
+            if self.waypoint_index == 0 {
+                break 'outer;
+            }
+            match self.path.get(self.waypoint_index as usize) {
+                Some(point) => {
+                    if !map.line_of_sight_fat(&self.location, point, 0.25) {
+                        self.waypoint_index -= 1;
+                    } else {
+                        break 'outer;
+                    }
+                },
+                _ => {break 'outer}
+            }
         }
 
-        // Move towards waypoint
-        match &self.waypoint {
+        // Move towards waypoint AND stop moving if end reached
+        match self.path.get(self.waypoint_index as usize) {
             Some(point) => {
                 let vec_to_waypoint = self.location.dist_to(point);
-                if vec_to_waypoint.length() < 0.1 && self.path.len() == 0 {
-                    // Set waypoint to none if we are at the end of path and waypoint reached
+                if vec_to_waypoint.length() < 0.1 && self.path.len() - 1 == self.waypoint_index as usize {
                     self.location = point::Point::new(point.x, point.y);
-                    self.waypoint = None;
+                    self.set_path(Vec::new());
                 } else {
                     let normalized = vec_to_waypoint.normalized();
                     self.location.add(&normalized.negated().multiplied(0.04));
                     self.set_orientation_from_vector(&normalized);
                 }
+
+            },
+            _ => {
+                println!("HMmm I dont think this shoudl ever happen");
             }
-            _ => {}
         }
     }
 
-    pub fn set_path(&mut self, path: VecDeque<point::Point>) {
+    pub fn set_path(&mut self, path: Vec<point::Point>) {
+        self.waypoint_index = 0;
         self.path = path;
     }
 

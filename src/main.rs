@@ -190,7 +190,7 @@ pub fn main() -> Result<(), String> {
                     canvas.draw_rect(rect)?;
                 }
                 if debug_enabled {
-                    match &entity.waypoint {
+                    match &entity.get_waypoint() {
                         Some(w) => {
                             let screen_start_pos = camera.game_to_screen(entity.location.x, entity.location.y);
                             let screen_end_pos = camera.game_to_screen(w.x, w.y);
