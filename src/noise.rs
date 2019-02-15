@@ -18,7 +18,7 @@ impl PerlinNoise {
     }
 
     fn lerp(&self, a0: f32, a1: f32, w: f32) -> f32 {
-        return ((1.0 - w) * a0 + w * a1);
+        return (1.0 - w) * a0 + w * a1;
     }
 
     fn grad_at(&mut self, x: i32, y: i32) -> (f32, f32) {

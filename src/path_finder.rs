@@ -8,14 +8,8 @@ use super::map;
 pub fn build_search_three(map: &map::Map, goal_point: (i32, i32), start_points: &Vec<(i32, i32)>)
     -> HashMap<(i32, i32), (i32, i32)>
 {
-    println!("Building search three goal: {:?} starts: {:?}", goal_point, start_points);
+    // println!("Building search three goal: {:?} starts: {:?}", goal_point, start_points);
     let mut return_data: HashMap<(i32, i32), (i32, i32)> = HashMap::new();
-
-    /*
-    if start_points.len() == 0 {
-        return return_data;
-    }
-    */
 
     let mut queue: VecDeque<((i32, i32), (i32, i32))> = VecDeque::new();
     queue.push_back((goal_point, goal_point));
@@ -32,13 +26,10 @@ pub fn build_search_three(map: &map::Map, goal_point: (i32, i32), start_points: 
         // Add stuff to queue
         if !return_data.contains_key(&point) {
             return_data.insert(point, vector);
-            if map.point_moveable(point) {
-                // println!("Popped moveable point {:?} {:?}", point, vector);
-                queue.push_back(((point.0 - 1, point.1), point));
-                queue.push_back(((point.0 + 1, point.1), point));
-                queue.push_back(((point.0, point.1 - 1), point));
-                queue.push_back(((point.0, point.1 + 1), point));
-            }
+            if map.point_moveable((point.0 - 1, point.1)) {queue.push_back(((point.0 - 1, point.1), point))};
+            if map.point_moveable((point.0 + 1, point.1)) {queue.push_back(((point.0 + 1, point.1), point))};
+            if map.point_moveable((point.0, point.1 - 1)) {queue.push_back(((point.0, point.1 - 1), point))};
+            if map.point_moveable((point.0, point.1 + 1)) {queue.push_back(((point.0, point.1 + 1), point))};
         }
 
         // Check if found everything

@@ -95,32 +95,15 @@ pub fn main() -> Result<(), String> {
                 Event::KeyDown { keycode: Some(Keycode::P), .. } => {debug_enabled = !debug_enabled;},
                 Event::MouseWheel { .. } => {
                     println!("Scroll happened");
-                    // println!("Scroll happened, {} {}", x, y);
                 },
-                Event::KeyDown { keycode: Some(Keycode::K), .. } => {
-                    let game_pos: (f32, f32) = mouse_game_pos;
-                    map.set_water(game_pos.0 as u32, game_pos.1 as u32);
-                },
-                Event::KeyDown { keycode: Some(Keycode::L), .. } => {
-                    let game_pos: (f32, f32) = mouse_game_pos;
-                    map.set_grass(game_pos.0 as u32, game_pos.1 as u32);
-                },
+                Event::KeyDown { keycode: Some(Keycode::J), .. } => {map.set(mouse_game_pos.0 as i32, mouse_game_pos.1 as i32, map::GroundType::Grass)},
+                Event::KeyDown { keycode: Some(Keycode::K), .. } => {map.set(mouse_game_pos.0 as i32, mouse_game_pos.1 as i32, map::GroundType::Water)},
+                Event::KeyDown { keycode: Some(Keycode::L), .. } => {map.set(mouse_game_pos.0 as i32, mouse_game_pos.1 as i32, map::GroundType::Forest)},
                 Event::MouseButtonDown { mouse_btn: MouseButton::Right, .. } => {
-                    println!("Ordering units to go to {:?}", mouse_game_pos);
                     entity_holder.order_selected_units_to(&map, mouse_game_pos);
                 },
-                Event::KeyDown { keycode: Some(Keycode::N), .. }
-                // | Event::MouseButtonDown { mouse_btn: MouseButton::Left, .. }
-                => {
+                Event::KeyDown { keycode: Some(Keycode::N), .. } => {
                     let game_pos: (f32, f32) = mouse_game_pos;
-                    println!(
-                        "Mouse pos screen: ({}, {}), game: ({}, {})",
-                        mouse_state.x(),
-                        mouse_state.y(),
-                        game_pos.0,
-                        game_pos.1
-                    );
-
                     entity_holder.add_new_entity(game_pos.0, game_pos.1);
                 },
                 _ => {}
@@ -158,7 +141,7 @@ pub fn main() -> Result<(), String> {
             let first_screen_pos = (first_screen_pos_f.0 as i32, first_screen_pos_f.1 as i32);
             for x in 0..map.width {
                 for y in 0..map.height {
-                    let texture_pointer = match map.get_at(x, y) {
+                    let texture_pointer = match map.get_at(x as i32, y as i32) {
                         map::GroundType::Grass => &land_texture,
                         map::GroundType::Water => &water_texture,
                         map::GroundType::Forest=> &forest_texture,
@@ -173,8 +156,7 @@ pub fn main() -> Result<(), String> {
                             tile_size,
                             tile_size,
                         )
-                        //camera.game_to_rect_i(x as i32, y as i32)
-                    ).map_err(|e| e.to_string())?;
+                    )?;
                 }
             }
 
@@ -213,7 +195,7 @@ pub fn main() -> Result<(), String> {
                             canvas.draw_line(
                                 Point::new(screen_start_pos.0 as i32, screen_start_pos.1 as i32),
                                 Point::new(screen_end_pos.0 as i32, screen_end_pos.1 as i32)
-                            );
+                            )?;
                         },
                         _ => {}
                     }
@@ -222,7 +204,7 @@ pub fn main() -> Result<(), String> {
                         let screen_point= camera.game_to_screen(point.x, point.y);
                         return Point::new(screen_point.0 as i32, screen_point.1 as i32);
                     }).collect();
-                    canvas.draw_lines(stuff.as_slice());
+                    canvas.draw_lines(stuff.as_slice())?;
                 }
             }
 

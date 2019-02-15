@@ -100,6 +100,7 @@ impl EntityHolder {
     }
 
     pub fn sort_entities(&mut self) {
+        // TODO: This is not so nice way to do this
         if self.entities.len() < 2 {
             return
         }

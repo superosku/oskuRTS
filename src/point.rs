@@ -55,28 +55,12 @@ impl Point {
         Point {x: x, y: y}
     }
 
-    /*
-    pub fn distance(&self, other: &Point) -> f32 {
-        (
-            (self.x - other.x).powi(2) +
-            (self.y - other.y).powi(2)
-        ).sqrt()
-    }
-    */
-
     pub fn add(&mut self, vec: &Vector) {
         self.x += vec.x;
         self.y += vec.y;
     }
 
-    pub fn add_vect(&self, vec: &Vector) -> Point {
-        Point {
-            x: self.x + vec.x,
-            y: self.y + vec.y
-        }
-    }
-
-    pub fn dist_vect(&self, other: &Point) -> Vector {
+    pub fn dist_to(&self, other: &Point) -> Vector {
         Vector::new(
             self.x - other.x,
             self.y - other.y

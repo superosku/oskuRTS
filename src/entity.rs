@@ -33,7 +33,7 @@ impl Entity {
         let max_x = corner_1.0.max(corner_2.0) + 0.25;
         let max_y = corner_1.1.max(corner_2.1) + 0.25;
 
-        return self.location.x > min_x && self.location.x < max_x && self.location.y > min_y && self.location.y < max_y
+        self.location.x > min_x && self.location.x < max_x && self.location.y > min_y && self.location.y < max_y
     }
 
     fn set_orientation_from_vector(&mut self, vector: &point::Vector) {
@@ -60,7 +60,7 @@ impl Entity {
         // Set the first waypoint if not yet set
         // So basically this: if (not self.waypoint) and (self.path)
         match &self.waypoint {
-            Some(point) => {},
+            Some(_point) => {},
             _ => {
                 match self.path.front() {
                     Some(point) => {
@@ -72,12 +72,9 @@ impl Entity {
         }
         // Check if we can take next waypoint
         'outer: loop {
-            // let mut matched = false;
             match self.path.front() {
                 Some(point) => {
                     if map.line_of_sight(&self.location, point) {
-                        // println!("FOUND LINE OF SIGHT STUFF");
-                        // matched = true;
                         self.waypoint = Some(point::Point::new(point.x, point.y));
                     } else {
                         break 'outer;
@@ -85,15 +82,15 @@ impl Entity {
                 },
                 _ => {break 'outer;}
             }
-            //if matched {
             self.path.pop_front();
-            //}
         }
 
+        // Move towards waypoint
         match &self.waypoint {
             Some(point) => {
-                let vec_to_waypoint = self.location.dist_vect(point);
-                if vec_to_waypoint.length() < 0.1 && self.path.len() == 0 { // Goal reached
+                let vec_to_waypoint = self.location.dist_to(point);
+                if vec_to_waypoint.length() < 0.1 && self.path.len() == 0 {
+                    // Set waypoint to none if we are at the end of path and waypoint reached
                     self.location = point::Point::new(point.x, point.y);
                     self.waypoint = None;
                 } else {
@@ -108,13 +105,12 @@ impl Entity {
 
     pub fn set_path(&mut self, path: VecDeque<point::Point>) {
         self.path = path;
-        // println!("Entity at {:?} got new path queue {:?}", self.location, self.path);
     }
 
     pub fn interact_with(&self, other: &Entity) -> Option<point::Vector> {
         let max_dist = 0.55;
 
-        let dist_vect = self.location.dist_vect(&other.location);
+        let dist_vect = self.location.dist_to(&other.location);
         let distance = dist_vect.length();
         if distance == 0.0 {
             return None
@@ -126,20 +122,21 @@ impl Entity {
     }
 
     pub fn interact_with_map(&mut self, map: &map::Map) {
+        let treshold = 0.25;
+
         let int_loc = self.location.as_int();
         let loc_x_rem = self.location.x % 1.0;
         let loc_y_rem = self.location.y % 1.0;
         let abs_loc_x_rem = (loc_x_rem - 0.5).abs();
         let abs_loc_y_rem = (loc_y_rem - 0.5).abs();
 
-        // Inside box?
+        // Inside box
         if !map.point_moveable(int_loc) {
             let closest_moveable_point = map.closest_moveable_point(int_loc.0, int_loc.1);
             self.location.x = closest_moveable_point.0 as f32 + 0.5;
             self.location.y = closest_moveable_point.1 as f32 + 0.5;
         }
 
-        let treshold = 0.25;
         // Sides
         if loc_x_rem < treshold && !map.point_moveable((int_loc.0 - 1, int_loc.1)) {
             self.location.x = self.location.x as i32 as f32 + treshold;

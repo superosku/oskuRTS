@@ -1,6 +1,3 @@
-use rand::{self, Rng};
-use std::cmp;
-
 use super::point;
 use super::noise;
 
@@ -39,26 +36,19 @@ impl Map {
             let x = n % width;
             let y = n / width;
 
-            let noise_value = (
+            let noise_value = 
                 tree_noise1.value_at(x as i32, y as i32) * 1.0 +
                 tree_noise2.value_at(x as i32, y as i32) * 2.0 +
-                tree_noise3.value_at(x as i32, y as i32) * 4.0
-            );
+                tree_noise3.value_at(x as i32, y as i32) * 4.0;
 
             if noise_value < -0.7 {
                 new_map.data[n as usize] = GroundType::Forest;
             }
-        }
 
-        for n in 0..data_size {
-            let x = n % width;
-            let y = n / width;
-
-            let noise_value = (
+            let noise_value = 
                 water_noise1.value_at(x as i32, y as i32) * 1.0 +
                 water_noise2.value_at(x as i32, y as i32) * 2.0 +
-                water_noise3.value_at(x as i32, y as i32) * 4.0
-            );
+                water_noise3.value_at(x as i32, y as i32) * 4.0;
 
             if noise_value < -0.7 {
                 new_map.data[n as usize] = GroundType::Water;
@@ -67,14 +57,12 @@ impl Map {
         return new_map;
     }
 
-    pub fn set_water(&mut self, x: u32, y: u32) {
-        let index: usize = (x + y * self.width) as usize;
-        self.data[index] = GroundType::Water;
-    }
-
-    pub fn set_grass(&mut self, x: u32, y: u32) {
-        let index: usize = (x + y * self.width) as usize;
-        self.data[index] = GroundType::Grass;
+    pub fn set(&mut self, x: i32, y: i32, ground_type: GroundType) {
+        if x < 0 || y < 0 || x >= self.width as i32 || y >= self.height as i32 {
+            return;
+        }
+        let index: usize = (x as u32 + (y as u32) * self.width) as usize;
+        self.data[index] = ground_type;
     }
 
     pub fn line_of_sight(&self, point_1: &point::Point, point_2: &point::Point) -> bool {
@@ -103,10 +91,8 @@ impl Map {
         let max_y = cmp::max(point_1.y as i32, point_2.y as i32);
         */
 
-        // println!("  Checking point moveability area ({} {}) ({} {})", min_x, min_y, max_x, max_y);
         for x in (min_x as i32)..(max_x as i32 + 1) {
             for y in (min_y as i32)..(max_y as i32 + 1) {
-                // println!("    Point moveable {} {} {}", x, y, self.point_moveable((x, y)));
                 if !self.point_moveable((x,y)) {
                     return false;
                 }
@@ -116,16 +102,16 @@ impl Map {
         true
     }
 
-    pub fn get_at(&self, x: u32, y: u32) -> GroundType {
-        if x < 0 || y < 0 || x >= self.width || y >= self.height {
+    pub fn get_at(&self, x: i32, y: i32) -> GroundType {
+        if x < 0 || y < 0 || x >= self.width as i32 || y >= self.height as i32 {
             return GroundType::Empty
         }
-        let index: usize = (x + y * self.width) as usize;
+        let index: usize = (x as u32 + (y as u32) * self.width) as usize;
         return self.data[index];
     }
 
     pub fn closest_moveable_point(&self, x: i32, y: i32) -> (i32, i32) {
-        for i in 1..10 {
+        for i in 1..20 {
             if self.point_moveable((x + i, y)) {return (x + i, y);};
             if self.point_moveable((x, y + i)) {return (x, y + i);};
             if self.point_moveable((x - i, y)) {return (x - i, y);};
@@ -136,14 +122,7 @@ impl Map {
     }
 
     pub fn point_moveable(&self, point: (i32, i32)) -> bool {
-        if point.0 < 0 || point.1 < 0 {
-            return false;
-        }
-        // println!("Checking {} {} {} {}", point.x, point.y, point.x as u32, point.y as u32);
-        let ground_type = self.get_at(
-            point.0 as u32,
-            point.1 as u32
-        );
+        let ground_type = self.get_at(point.0, point.1);
         ground_type == GroundType::Grass
     }
 }
