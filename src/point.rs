@@ -1,5 +1,6 @@
 
 
+#[derive(Debug)]
 pub struct Vector {
     pub x: f32,
     pub y: f32,
@@ -21,6 +22,20 @@ impl Vector {
             self.x / length,
             self.y / length
         )
+    }
+
+    pub fn x_normalized(&self) -> Vector {
+        if self.x == 0.0 {
+            return Vector::new(0.0, 0.0)
+        }
+        Vector::new(self.x / self.x.abs(), self.y / self.x.abs())
+    }
+
+    pub fn y_normalized(&self) -> Vector {
+        if self.y == 0.0 {
+            return Vector::new(0.0, 0.0)
+        }
+        Vector::new(self.x / self.y.abs(), self.y / self.y.abs())
     }
 
     pub fn add(&mut self, other: &Vector) {
@@ -58,6 +73,13 @@ impl Point {
     pub fn add(&mut self, vec: &Vector) {
         self.x += vec.x;
         self.y += vec.y;
+    }
+
+    pub fn added(&self, vec: &Vector) -> Point {
+        Point::new(
+            self.x + vec.x,
+            self.y + vec.y
+        )
     }
 
     pub fn dist_to(&self, other: &Point) -> Vector {

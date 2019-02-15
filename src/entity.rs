@@ -74,7 +74,7 @@ impl Entity {
         'outer: loop {
             match self.path.front() {
                 Some(point) => {
-                    if map.line_of_sight(&self.location, point) {
+                    if map.line_of_sight_fat(&self.location, point, 0.25) {
                         self.waypoint = Some(point::Point::new(point.x, point.y));
                     } else {
                         break 'outer;

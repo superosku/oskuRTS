@@ -63,6 +63,8 @@ pub fn main() -> Result<(), String> {
 
     // println!("HINT SET MAYBE, {}", sdl2::hint::set("SDL_HINT_RENDER_SCALE_QUALITY", "1"));
 
+    map.line_of_sight(&point::Point::new(5.5, 5.5), &point::Point::new(0.5, 0.5));
+
     loop {
         // Events
         let mouse_state: MouseState = event_pump.mouse_state();

@@ -66,40 +66,87 @@ impl Map {
     }
 
     pub fn line_of_sight(&self, point_1: &point::Point, point_2: &point::Point) -> bool {
-        let mut min_x = point_1.x.min(point_2.x);
-        let mut min_y = point_1.y.min(point_2.y);
-        let mut max_x = point_1.x.max(point_2.x);
-        let mut max_y = point_1.y.max(point_2.y);
+        let distance_vec = point_2.dist_to(point_1);
 
-        if min_x % 1.0 < 0.25 {
-            min_x -= 0.5
-        }
-        if min_y % 1.0 < 0.25 {
-            min_y -= 0.5
-        }
-        if max_x % 1.0 > 0.75 {
-            max_x += 0.5
-        }
-        if max_y % 1.0 > 0.75 {
-            max_y += 0.5
-        }
+        let mut current_point = point::Point::new(point_1.x, point_1.y);
 
-        /*
-        let min_x = cmp::min(point_1.x as i32, point_2.x as i32);
-        let max_x = cmp::max(point_1.x as i32, point_2.x as i32);
-        let min_y = cmp::min(point_1.y as i32, point_2.y as i32);
-        let max_y = cmp::max(point_1.y as i32, point_2.y as i32);
-        */
+        let mut counter = 0;
 
-        for x in (min_x as i32)..(max_x as i32 + 1) {
-            for y in (min_y as i32)..(max_y as i32 + 1) {
-                if !self.point_moveable((x,y)) {
-                    return false;
+        let mut x: i32 = current_point.x as i32;
+        let mut y: i32 = current_point.y as i32;
+
+        loop {
+            if x == point_2.x as i32 && y == point_2.y as i32 {
+                return true;
+            }
+
+            if !self.point_moveable((x, y)) {
+                return false;
+            }
+            let mut x_diff: f32 = current_point.x - x as f32;
+            let mut y_diff: f32 = current_point.y - y as f32;
+            if distance_vec.x > 0.0 {
+                x_diff = 1.0 - x_diff
+            }
+            if distance_vec.y > 0.0 {
+                y_diff = 1.0 - y_diff
+            }
+
+            let x_normalized_vec = distance_vec.x_normalized().multiplied(x_diff);
+            let y_normalized_vec = distance_vec.y_normalized().multiplied(y_diff);
+
+            if x_normalized_vec.length() < y_normalized_vec.length() {
+                current_point.add(&x_normalized_vec);
+                if distance_vec.x < 0.0 {
+                    x -= 1;
+                } else {
+                    x += 1;
                 }
+            } else {
+                current_point.add(&y_normalized_vec);
+                if distance_vec.y < 0.0 {
+                    y -= 1;
+                } else {
+                    y += 1;
+                }
+            }
+
+            counter += 1;
+            if counter > 1000 {
+                println!("THIS SHOULD NOT HAPPEN!!! PANIC!");
+                break;
             }
         }
 
         true
+    }
+
+    pub fn line_of_sight_fat(&self, point_1: &point::Point, point_2: &point::Point, radius: f32) -> bool {
+        let normal_vec = point_2.dist_to(point_1).normalized();
+        let ninety_degree_vec = point::Vector::new(normal_vec.x, -normal_vec.y);
+
+        if point_1.x as i32 == point_2.x as i32 && point_1.y as i32 == point_2.y as i32 &&
+            self.point_moveable((point_1.x as i32, point_1.y as i32)) {
+                return true;
+        }
+
+        return 
+            self.line_of_sight(
+                &point_1
+                .added(&ninety_degree_vec.multiplied(radius))
+                .added(&normal_vec.multiplied(radius)),
+                &point_2
+                .added(&ninety_degree_vec.multiplied(radius))
+                .added(&normal_vec.multiplied(radius)),
+            ) &&
+            self.line_of_sight(
+                &point_1
+                .added(&ninety_degree_vec.multiplied(-radius))
+                .added(&normal_vec.multiplied(-radius)),
+                &point_2
+                .added(&ninety_degree_vec.multiplied(-radius))
+                .added(&normal_vec.multiplied(-radius)),
+            )
     }
 
     pub fn get_at(&self, x: i32, y: i32) -> GroundType {
