@@ -8,7 +8,6 @@ pub struct Entity {
     pub location: point::Point,
     pub id: u32,
 
-    // pub waypoint: Option<point::Point>,
     pub waypoint_index: u32,
     pub path: Vec<point::Point>,
 
@@ -21,7 +20,6 @@ impl Entity {
             location: point::Point::new(x, y),
             id: id,
 
-            // waypoint: None,
             waypoint_index: 0,
             path: Vec::new(),
 
@@ -47,6 +45,7 @@ impl Entity {
         let eight_pi = 0.39269908;
 
         let mut angle = vector.x.atan2(vector.y);
+
         angle += quarter_pi * 4.0;
         angle -= eight_pi;
 
@@ -71,40 +70,37 @@ impl Entity {
     }
 
     pub fn ai_stuff(&mut self, map: &map::Map) {
-        // Set the first waypoint if not yet set
-        // So basically this: if (not self.waypoint) and (self.path)
-        
         if self.path.len() == 0 {
             return;
         }
 
         // Do this until next point is reachable
-        'outer: loop {
+        'outer1: loop {
             match self.path.get((self.waypoint_index + 1) as usize) {
                 Some(point) => {
                     if map.line_of_sight_fat(&self.location, point, 0.25) {
                         self.waypoint_index += 1;
                     } else {
-                        break 'outer;
+                        break 'outer1;
                     }
                 },
-                _ => {break 'outer}
+                _ => {break 'outer1}
             }
         }
         // Back off in point queue if point is not reachable anymore
-        'outer: loop {
+        'outer2: loop {
             if self.waypoint_index == 0 {
-                break 'outer;
+                break 'outer2;
             }
             match self.path.get(self.waypoint_index as usize) {
                 Some(point) => {
                     if !map.line_of_sight_fat(&self.location, point, 0.25) {
                         self.waypoint_index -= 1;
                     } else {
-                        break 'outer;
+                        break 'outer2;
                     }
                 },
-                _ => {break 'outer}
+                _ => {break 'outer2}
             }
         }
 
@@ -120,7 +116,6 @@ impl Entity {
                     self.location.add(&normalized.negated().multiplied(0.04));
                     self.set_orientation_from_vector(&normalized);
                 }
-
             },
             _ => {
                 println!("HMmm I dont think this shoudl ever happen");

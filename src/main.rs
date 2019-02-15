@@ -162,6 +162,14 @@ pub fn main() -> Result<(), String> {
                 }
             }
 
+            // Draw last search tree size
+            if debug_enabled {
+                for point in entity_holder.debug_search_tree.keys() {
+                    let screen_pos = camera.game_to_screen(point.0 as f32 + 0.5, point.1 as f32 + 0.5);
+                    canvas.draw_rect(Rect::new(screen_pos.0 as i32 - 2, screen_pos.1 as i32 - 2, 4, 4))?;
+                }
+            }
+
             // Draw entities
             for entity in entity_holder.get_entity_refs() {
                 canvas.set_draw_color(Color::RGB(0, 0, 255));

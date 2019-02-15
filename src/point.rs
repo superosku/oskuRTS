@@ -18,6 +18,9 @@ impl Vector {
 
     pub fn normalized(&self) -> Vector {
         let length = self.length();
+        if length == 0.0 {
+            return Vector::new(0.0, 0.0); // Todo is this best way?
+        }
         Vector::new(
             self.x / length,
             self.y / length

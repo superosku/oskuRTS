@@ -10,6 +10,7 @@ pub struct EntityHolder {
     pub entities: Vec<entity::Entity>,
     pub selected_entity_ids: HashMap<u32, bool>,
     pub id_counter: u32,
+    pub debug_search_tree: HashMap<(i32, i32), Option<(i32, i32)>> // For debug drawings of the search tree
 }
 
 impl EntityHolder {
@@ -18,6 +19,7 @@ impl EntityHolder {
             entities: Vec::new(),
             selected_entity_ids: HashMap::new(),
             id_counter: 0,
+            debug_search_tree: HashMap::new(),
         }
     }
 
@@ -48,26 +50,27 @@ impl EntityHolder {
             distinct_points.push(*point);
         }
 
-        let search_tree = path_finder::build_search_three(map, (end_point.0 as i32, end_point.1 as i32), &distinct_points);
-        // println!("Finding paths for points");
+        let search_tree: HashMap<(i32, i32), Option<(i32, i32)>> =
+            path_finder::build_search_tree(map, (end_point.0 as i32, end_point.1 as i32), &distinct_points);
+
         for point in distinct_points.iter() {
             let mut path: Vec<(i32, i32)> = Vec::new();
             let mut old_point: &(i32, i32) = point;
             path.push(*old_point);
             loop {
-                let next_point: &(i32, i32) = match search_tree.get(old_point) {
+                let next_point_option: &Option<(i32, i32)> = match search_tree.get(old_point) {
                     Some(x) => x,
                     _ => {
                         break;
                     }
                 };
 
+                let next_point = match next_point_option {
+                    Some(x) => x,
+                    _ => break
+                };
+
                 path.push(*next_point);
-
-                if old_point == next_point {
-                    break;
-                }
-
                 old_point = next_point;
             }
             // println!("Point {:?} {} {:?}", point, search_tree.contains_key(point), path);
@@ -89,6 +92,8 @@ impl EntityHolder {
                 }
             }
         }
+
+        self.debug_search_tree = search_tree;
     }
 
     pub fn entity_selected(&self, entity: &entity::Entity) -> bool {
