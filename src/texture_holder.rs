@@ -43,9 +43,9 @@ impl<'a> TextureHolder<'a> {
         let mut new_unit_surface: Surface = Surface::new(512, 128, PixelFormatEnum::RGBA32)?;
         let my_rect = Rect::new(0, 0, 512, 128);
 
-        self.unit_surface.blit(my_rect, &mut new_unit_surface, my_rect);
+        self.unit_surface.blit(my_rect, &mut new_unit_surface, my_rect)?;
         self.unit_surface_mask.set_color_mod(color);
-        self.unit_surface_mask.blit(my_rect, &mut new_unit_surface, my_rect);
+        self.unit_surface_mask.blit(my_rect, &mut new_unit_surface, my_rect)?;
 
         let unit_texture = TextureHolder::surface_to_texture(&new_unit_surface, texture_creator)?;
         self.unit_textures.push(unit_texture);
@@ -66,7 +66,7 @@ impl<'a> TextureHolder<'a> {
         let ground_texture: Texture<'a> = TextureHolder::surface_to_texture(&ground_surface, texture_creator)?;
 
         let unit_surface: Surface = LoadSurface::from_file("src/images/guy_roster.png")?;
-        let mut unit_surface_mask: Surface = LoadSurface::from_file("src/images/guy_roster_mask.png")?;
+        let unit_surface_mask: Surface = LoadSurface::from_file("src/images/guy_roster_mask.png")?;
 
         let mut texture_holder = TextureHolder {
             ground_texture: ground_texture,

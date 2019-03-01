@@ -48,12 +48,7 @@ pub fn main() -> Result<(), String> {
 
     let texture_creator: TextureCreator<WindowContext> = canvas.texture_creator();
     
-    let land_texture = texture_creator.load_texture("src/images/maa.png")?;
-    let water_texture = texture_creator.load_texture("src/images/vesi.png")?;
-    let forest_texture = texture_creator.load_texture("src/images/tree.png")?;
     let shadow_texture = texture_creator.load_texture("src/images/shadow.png")?;
-    //let unit_texture = texture_creator.load_texture("src/images/ukko.png")?;
-    let mut unit_texture = texture_creator.load_texture("src/images/guy_roster.png")?;
 
     let mut camera: camera::Camera = camera::Camera::new(600, 600);
     let mut map: map::Map = map::Map::new_random(200, 200);
@@ -70,7 +65,7 @@ pub fn main() -> Result<(), String> {
 
     // println!("HINT SET MAYBE, {}", sdl2::hint::set("SDL_HINT_RENDER_SCALE_QUALITY", "1"));
     
-    let mut texture_holder: texture_holder::TextureHolder = texture_holder::TextureHolder::new(&texture_creator)?;
+    let texture_holder: texture_holder::TextureHolder = texture_holder::TextureHolder::new(&texture_creator)?;
 
     map.line_of_sight(&point::Point::new(5.5, 5.5), &point::Point::new(0.5, 0.5));
 
