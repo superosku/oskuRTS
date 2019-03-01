@@ -1,6 +1,8 @@
+use rand::{Rng};
 
 use super::point;
 use super::map;
+
 
 
 pub struct Entity {
@@ -133,7 +135,11 @@ impl Entity {
         let dist_vect = self.location.dist_to(&other.location);
         let distance = dist_vect.length();
         if distance == 0.0 {
-            return None
+            // Two units at exact same location. Move by random value
+            let mut randomizer = rand::thread_rng();
+            let x_value: f32 = randomizer.gen_range(-0.1, 0.1);
+            let y_value: f32 = randomizer.gen_range(-0.1, 0.1);
+            return Some(point::Vector::new(x_value, y_value));
         } else if distance < max_dist {
             let move_vect = dist_vect.normalized().multiplied((max_dist - distance) * 0.3);
             return Some(move_vect);
