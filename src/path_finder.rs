@@ -1,7 +1,6 @@
 use std::cmp::Ordering;
 
 use std::collections::HashMap;
-use std::collections::VecDeque;
 use std::collections::BinaryHeap;
 
 use super::map;

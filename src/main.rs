@@ -6,6 +6,8 @@ use sdl2::event::Event;
 use sdl2::keyboard::{Keycode, Scancode};
 use sdl2::mouse::{MouseState, MouseButton};
 use sdl2::rect::{Rect, Point};
+use sdl2::render::{WindowCanvas, TextureCreator};
+use sdl2::video::{WindowContext, Window};
 
 use std::time::Instant;
 use std::cmp;
@@ -17,6 +19,7 @@ mod path_finder;
 mod entity;
 mod entity_holder;
 mod noise;
+mod texture_holder;
 
 
 pub fn main() -> Result<(), String> {
@@ -24,29 +27,33 @@ pub fn main() -> Result<(), String> {
     let sdl_context = sdl2::init()?;
     let video_subsystem = sdl_context.video()?;
     let _image_context = sdl2::image::init(InitFlag::PNG | InitFlag::JPG)?;
-    let window = video_subsystem
+
+    let window: Window = video_subsystem
         .window("rust demo", 1000, 800)
         .resizable()
         .build()
         .expect("Error building window");
 
-    let mut canvas = window
+    // let mut canvas: Canvas<Window> = window
+    let mut canvas: WindowCanvas = window
         .into_canvas()
         .accelerated()
         .present_vsync()
         .build()
         .map_err(|e| e.to_string())?;
+
     let mut event_pump = sdl_context.event_pump().map_err(|e| e.to_string())?;
 
     let mut tick: u32 = 0;
 
-    let texture_creator = canvas.texture_creator();
+    let texture_creator: TextureCreator<WindowContext> = canvas.texture_creator();
+    
     let land_texture = texture_creator.load_texture("src/images/maa.png")?;
     let water_texture = texture_creator.load_texture("src/images/vesi.png")?;
     let forest_texture = texture_creator.load_texture("src/images/tree.png")?;
     let shadow_texture = texture_creator.load_texture("src/images/shadow.png")?;
     //let unit_texture = texture_creator.load_texture("src/images/ukko.png")?;
-    let unit_texture = texture_creator.load_texture("src/images/guy_roster.png")?;
+    let mut unit_texture = texture_creator.load_texture("src/images/guy_roster.png")?;
 
     let mut camera: camera::Camera = camera::Camera::new(600, 600);
     let mut map: map::Map = map::Map::new_random(200, 200);
@@ -62,6 +69,8 @@ pub fn main() -> Result<(), String> {
     let mut debug_enabled = false;
 
     // println!("HINT SET MAYBE, {}", sdl2::hint::set("SDL_HINT_RENDER_SCALE_QUALITY", "1"));
+    
+    let mut texture_holder: texture_holder::TextureHolder = texture_holder::TextureHolder::new(&texture_creator)?;
 
     map.line_of_sight(&point::Point::new(5.5, 5.5), &point::Point::new(0.5, 0.5));
 
@@ -143,15 +152,15 @@ pub fn main() -> Result<(), String> {
             let first_screen_pos = (first_screen_pos_f.0 as i32, first_screen_pos_f.1 as i32);
             for x in 0..map.width {
                 for y in 0..map.height {
-                    let texture_pointer = match map.get_at(x as i32, y as i32) {
-                        map::GroundType::Grass => &land_texture,
-                        map::GroundType::Water => &water_texture,
-                        map::GroundType::Forest=> &forest_texture,
-                        _ => &shadow_texture
-                    };
+                    let texture_id: u32 = match map.get_at(x as i32, y as i32) {
+                        map::GroundType::Grass => Ok(0),
+                        map::GroundType::Water => Ok(2),
+                        map::GroundType::Forest=> Ok(1),
+                        _ => Err("Invalid GroundType for drawing".to_string())
+                    }?;
                     canvas.copy(
-                        texture_pointer,
-                        None,
+                        &texture_holder.ground_texture,
+                        Rect::new(texture_id as i32 * 64, 0, 64, 64),
                         Rect::new(
                             first_screen_pos.0 + (x * tile_size) as i32,
                             first_screen_pos.1 + (y * tile_size) as i32,
@@ -188,8 +197,12 @@ pub fn main() -> Result<(), String> {
                     tile_size * 2,
                 );
                 canvas.copy(&shadow_texture, None, rect).map_err(|e| e.to_string())?;
+                // unit_texture.set_color_mod(255, 128, 0);
+                //unit_texture.set_color_mod(0, 255, 255);
                 canvas.copy(
-                    &unit_texture,
+                    //&unit_texture,
+                    //&texture_holder.unit_texture,
+                    texture_holder.get_team_texture((entity.id % 4) as usize)?,
                     Rect::new(64 * entity.orientation as i32,0,64,128),
                     unit_texture_rect
                 )?;

@@ -1,7 +1,6 @@
 
 use super::point;
 use super::map;
-use std::collections::VecDeque;
 
 
 pub struct Entity {
