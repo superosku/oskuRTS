@@ -29,6 +29,8 @@ mouse left click and drag -> Select units
 mouse right click -> Order selected units to go to mouse location
 P -> Toggle debug view
 N -> Add unit to mouse position (hold to add many quickly)
+M -> Add enemy unit
+X -> Order stop for selected unit (stop doing what doing now)
 IO -> Zoom in/out
 KL -> Make tile water/land
 ```
@@ -40,13 +42,16 @@ Features
  - Unit collision detection with other units and the map
  - Selecting units
  - Path finding for selected group
+ - Drawing graphics for units
+ - Different teams and separate colors for teams units
+ - Units attacking other team units
  - Much more
 
 Todo next
 
- - Drawing graphics for units
- - Fix issues with path finding and large unit groups behaving funnyly
+ - Units dying
  - Different kind of units
- - Different teams and separate colors for teams units
- - Units attacking other team units
+ - Buildings
+ - Resource gathering
+ - Unit building
 

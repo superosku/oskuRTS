@@ -4,6 +4,35 @@ use super::point;
 use super::map;
 
 
+pub struct Projectile {
+    pub location: point::Point,
+    pub end_point: point::Point,
+}
+
+
+impl Projectile {
+    pub fn new(start_point: &point::Point, end_point: &point::Point) -> Projectile {
+        Projectile {
+            location: point::Point::new(start_point.x, start_point.y),
+            end_point: point::Point::new(end_point.x, end_point.y),
+        }
+    }
+
+    pub fn increment(&mut self) {
+        let dist_vect = self.location.dist_to(&self.end_point);
+        if dist_vect.length() < 0.1 {
+            self.location.x = self.end_point.x;
+            self.location.y = self.end_point.y;
+        } else {
+            self.location = self.location.added(&self.location.dist_to(&self.end_point).normalized().multiplied(-0.1));
+        }
+    }
+
+    pub fn at_location(&self) -> bool {
+        return self.location.x == self.end_point.x && self.location.y == self.end_point.y;
+    }
+}
+
 
 pub struct Entity {
     pub location: point::Point,
@@ -13,10 +42,15 @@ pub struct Entity {
     pub path: Vec<point::Point>,
 
     pub orientation: u32,
+
+    pub team_id: u32,
+    pub hp: i32,
+    pub cooldown: u32,
+    pub closest_seen_enemy_point: Option<point::Point>,
 }
 
 impl Entity {
-    pub fn new(x: f32, y: f32, id: u32) -> Entity {
+    pub fn new(x: f32, y: f32, id: u32, team_id: u32) -> Entity {
         Entity {
             location: point::Point::new(x, y),
             id: id,
@@ -25,6 +59,11 @@ impl Entity {
             path: Vec::new(),
 
             orientation: id % 8,
+
+            team_id: team_id,
+            hp: 100,
+            cooldown: 0,
+            closest_seen_enemy_point: None,
         }
     }
 
@@ -70,9 +109,36 @@ impl Entity {
         return None
     }
 
-    pub fn ai_stuff(&mut self, map: &map::Map) {
+    pub fn ai_stuff(&mut self, map: &map::Map) -> Option<Projectile> {
+        // Optionally returns projectile if such action was made
+        
+        if self.cooldown > 0 {
+            self.cooldown -= 1;
+        }
+
+        let followed_path = self.follow_path_finding(map);
+
+        if !followed_path {
+            // Shoot possible enemy
+            match &self.closest_seen_enemy_point {Some(point) => {
+                let vector_to_enemy = self.location.dist_to(point);
+                if vector_to_enemy.length() > 10.0 {
+                    self.location.add(&vector_to_enemy.normalized().multiplied(-0.04));
+                } else {
+                    if self.cooldown == 0 {
+                        self.cooldown = 45;
+                        return Some(Projectile::new(&self.location, point))
+                    }
+                }
+            }, _ => {}}
+        }
+
+        return None
+    }
+
+    fn follow_path_finding(&mut self, map: &map::Map) -> bool {
         if self.path.len() == 0 {
-            return;
+            return false;
         }
 
         // Do this until next point is reachable
@@ -122,6 +188,7 @@ impl Entity {
                 println!("HMmm I dont think this shoudl ever happen");
             }
         }
+        return true;
     }
 
     pub fn set_path(&mut self, path: Vec<point::Point>) {
@@ -129,22 +196,53 @@ impl Entity {
         self.path = path;
     }
 
-    pub fn interact_with(&self, other: &Entity) -> Option<point::Vector> {
+    pub fn order_stop(&mut self) {
+        self.path = Vec::new();
+        self.waypoint_index = 0;
+    }
+
+    pub fn clear_interaction_data(&mut self) {
+        self.closest_seen_enemy_point = None;
+    }
+
+    pub fn interact_with(&mut self, other: &Entity, map: &map::Map) {
         let max_dist = 0.55;
 
         let dist_vect = self.location.dist_to(&other.location);
         let distance = dist_vect.length();
+
+        // Storing closest seen enemy position
+        if 
+            other.team_id != self.team_id &&
+            map.line_of_sight(&self.location, &other.location)  &&
+            distance < 20.0
+        {
+            match &mut self.closest_seen_enemy_point {
+                Some(point) => {
+                    let currently_stored_points_distance = self.location.dist_to(&point).length();
+                    if distance < currently_stored_points_distance {
+                        // point.x = other.location.x;
+                        // point.y = other.location.y;
+                        self.closest_seen_enemy_point = Some(point::Point::new(other.location.x, other.location.y));
+                    }
+                },
+                _ => {
+                    self.closest_seen_enemy_point = Some(point::Point::new(other.location.x, other.location.y));
+                }
+            }
+        }
+
+        // Moving if another unit is too close
         if distance == 0.0 {
             // Two units at exact same location. Move by random value
             let mut randomizer = rand::thread_rng();
             let x_value: f32 = randomizer.gen_range(-0.1, 0.1);
             let y_value: f32 = randomizer.gen_range(-0.1, 0.1);
-            return Some(point::Vector::new(x_value, y_value));
+            self.location = self.location.added(&point::Vector::new(x_value, y_value));
         } else if distance < max_dist {
             let move_vect = dist_vect.normalized().multiplied((max_dist - distance) * 0.3);
-            return Some(move_vect);
+            self.location = self.location.added(&move_vect);
         }
-        return None
     }
 
     pub fn interact_with_map(&mut self, map: &map::Map) {

@@ -108,10 +108,9 @@ pub fn main() -> Result<(), String> {
                 Event::MouseButtonDown { mouse_btn: MouseButton::Right, .. } => {
                     entity_holder.order_selected_units_to(&map, mouse_game_pos);
                 },
-                Event::KeyDown { keycode: Some(Keycode::N), .. } => {
-                    let game_pos: (f32, f32) = mouse_game_pos;
-                    entity_holder.add_new_entity(game_pos.0, game_pos.1);
-                },
+                Event::KeyDown { keycode: Some(Keycode::N), .. } => {entity_holder.add_new_entity(mouse_game_pos.0, mouse_game_pos.1, 0);},
+                Event::KeyDown { keycode: Some(Keycode::M), .. } => {entity_holder.add_new_entity(mouse_game_pos.0, mouse_game_pos.1, 1);},
+                Event::KeyDown { keycode: Some(Keycode::X), .. } => {entity_holder.order_stop_selection();},
                 _ => {}
             }
         }
@@ -132,12 +131,12 @@ pub fn main() -> Result<(), String> {
         }
 
         // Game handling
-        entity_holder.entities_ai_stuff(&map);
-        entity_holder.entities_interact_with_each_other();
-        entity_holder.entities_interact_with_map(&map);
-        entity_holder.sort_entities();
+        entity_holder.entity_ai(&map);
+
 
         { // Draw
+            entity_holder.sort_entities(); // Done for drawing purposes
+
             canvas.set_draw_color(Color::RGB(55, 55, 55));
             canvas.clear();
 
@@ -192,12 +191,8 @@ pub fn main() -> Result<(), String> {
                     tile_size * 2,
                 );
                 canvas.copy(&shadow_texture, None, rect).map_err(|e| e.to_string())?;
-                // unit_texture.set_color_mod(255, 128, 0);
-                //unit_texture.set_color_mod(0, 255, 255);
                 canvas.copy(
-                    //&unit_texture,
-                    //&texture_holder.unit_texture,
-                    texture_holder.get_team_texture((entity.id % 4) as usize)?,
+                    texture_holder.get_team_texture((entity.team_id) as usize)?,
                     Rect::new(64 * entity.orientation as i32,0,64,128),
                     unit_texture_rect
                 )?;
@@ -208,10 +203,9 @@ pub fn main() -> Result<(), String> {
                 if debug_enabled {
                     match &entity.get_waypoint() {
                         Some(w) => {
-                            let screen_start_pos = camera.game_to_screen(entity.location.x, entity.location.y);
                             let screen_end_pos = camera.game_to_screen(w.x, w.y);
                             canvas.draw_line(
-                                Point::new(screen_start_pos.0 as i32, screen_start_pos.1 as i32),
+                                Point::new(screen_center_pos.0 as i32, screen_center_pos.1 as i32),
                                 Point::new(screen_end_pos.0 as i32, screen_end_pos.1 as i32)
                             )?;
                         },
@@ -223,7 +217,23 @@ pub fn main() -> Result<(), String> {
                         return Point::new(screen_point.0 as i32, screen_point.1 as i32);
                     }).collect();
                     canvas.draw_lines(stuff.as_slice())?;
+
+                    canvas.set_draw_color(Color::RGB(0, 255, 255));
+                    match &entity.closest_seen_enemy_point { Some(point) => {
+                        let screen_end_pos = camera.game_to_screen(point.x, point.y);
+                        canvas.draw_line(
+                            Point::new(screen_center_pos.0 as i32, screen_center_pos.1 as i32),
+                            Point::new(screen_end_pos.0 as i32, screen_end_pos.1 as i32)
+                        )?;
+                    }, _ => {} }
                 }
+            }
+
+            // Draw projectiles
+            for projectile in entity_holder.projectiles.iter() {
+                let screen_pos = camera.game_to_screen(projectile.location.x, projectile.location.y);
+                canvas.set_draw_color(Color::RGB(0, 0, 0));
+                canvas.fill_rect(Rect::new(screen_pos.0 as i32 - 4, screen_pos.1 as i32 - 4, 8, 8))?;
             }
 
             // Draw mouse selection box

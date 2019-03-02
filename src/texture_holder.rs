@@ -75,9 +75,9 @@ impl<'a> TextureHolder<'a> {
             unit_textures: Vec::new(),
         };
 
-        texture_holder.generate_team_texture(Color::RGB(255, 0, 0), texture_creator)?;
+        texture_holder.generate_team_texture(Color::RGB(255, 64, 32), texture_creator)?;
+        texture_holder.generate_team_texture(Color::RGB(32, 64, 255), texture_creator)?;
         texture_holder.generate_team_texture(Color::RGB(0, 255, 0), texture_creator)?;
-        texture_holder.generate_team_texture(Color::RGB(0, 0, 255), texture_creator)?;
         texture_holder.generate_team_texture(Color::RGB(255, 128, 64), texture_creator)?;
 
         Ok(texture_holder)
