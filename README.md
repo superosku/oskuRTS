@@ -45,11 +45,12 @@ Features
  - Drawing graphics for units
  - Different teams and separate colors for teams units
  - Units attacking other team units
+ - Units dying
+ - HP bars
  - Much more
 
 Todo next
 
- - Units dying
  - Different kind of units
  - Buildings
  - Resource gathering

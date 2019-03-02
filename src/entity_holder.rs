@@ -175,6 +175,12 @@ impl EntityHolder {
         for projectile in self.projectiles.iter_mut() {
             projectile.increment();
             if projectile.at_location() {
+                'inner: for entity in self.entities.iter_mut() {
+                    if entity.location.dist_to(&projectile.location).length() < 0.5 {
+                        entity.take_hit(12);
+                        break 'inner;
+                    }
+                }
                 // TODO: Harm units that were hit
             }
         }
@@ -189,6 +195,8 @@ impl EntityHolder {
         self.entities_interact_with_map(&map);
 
         self.increment_projectiles();
+
+        self.entities.retain(|entity| {entity.alive()});
     }
 }
 

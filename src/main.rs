@@ -227,6 +227,29 @@ pub fn main() -> Result<(), String> {
                         )?;
                     }, _ => {} }
                 }
+
+                // HP bar
+                let entity_max_hp= 100;
+                let health_persentage = entity.hp as f32 / entity_max_hp as f32;
+
+                let max_hp_rect = Rect::new(
+                    (screen_center_pos.0 - 1.0 * 32.0 / camera.zoom) as i32 - (tile_size as f32 * 0.2) as i32,
+                    (screen_center_pos.1 + 1.0 * 32.0 / camera.zoom) as i32,
+                    (tile_size as f32 * 1.4) as u32,
+                    tile_size * 2 / 7,
+                );
+                let hp_rect = Rect::new(
+                    (screen_center_pos.0 - 1.0 * 32.0 / camera.zoom) as i32 - (tile_size as f32 * 0.2) as i32,
+                    (screen_center_pos.1 + 1.0 * 32.0 / camera.zoom) as i32,
+                    ((tile_size as f32 * 1.4) as f32 * health_persentage) as u32,
+                    tile_size * 2 / 7,
+                );
+                canvas.set_draw_color(Color::RGB(0, 0, 0));
+                canvas.fill_rect(max_hp_rect)?;
+                canvas.set_draw_color(Color::RGB(0, 255, 0));
+                canvas.fill_rect(hp_rect)?;
+                canvas.set_draw_color(Color::RGB(0, 0, 0));
+                canvas.draw_rect(max_hp_rect)?;
             }
 
             // Draw projectiles

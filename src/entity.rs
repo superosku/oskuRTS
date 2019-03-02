@@ -24,7 +24,7 @@ impl Projectile {
             self.location.x = self.end_point.x;
             self.location.y = self.end_point.y;
         } else {
-            self.location = self.location.added(&self.location.dist_to(&self.end_point).normalized().multiplied(-0.1));
+            self.location = self.location.added(&self.location.dist_to(&self.end_point).normalized().multiplied(-0.2));
         }
     }
 
@@ -65,6 +65,14 @@ impl Entity {
             cooldown: 0,
             closest_seen_enemy_point: None,
         }
+    }
+
+    pub fn alive(&self) -> bool {
+        self.hp > 0
+    }
+
+    pub fn take_hit(&mut self, amount: u32) {
+        self.hp -= amount as i32;
     }
 
     pub fn add_force_vect(&mut self, force_vect: &point::Vector) {
