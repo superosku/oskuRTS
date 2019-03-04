@@ -131,7 +131,8 @@ impl Entity {
             match &self.closest_seen_enemy_point {Some(point) => {
                 let vector_to_enemy = self.location.dist_to(point);
                 if vector_to_enemy.length() > 10.0 {
-                    self.location.add(&vector_to_enemy.normalized().multiplied(-0.04));
+                    self.move_vector(&vector_to_enemy.normalized().multiplied(-0.04), true);
+                    // self.location.add(&vector_to_enemy.normalized().multiplied(-0.04));
                 } else {
                     if self.cooldown == 0 {
                         self.cooldown = 45;
@@ -188,8 +189,9 @@ impl Entity {
                     self.set_path(Vec::new());
                 } else {
                     let normalized = vec_to_waypoint.normalized();
-                    self.location.add(&normalized.negated().multiplied(0.04));
-                    self.set_orientation_from_vector(&normalized);
+                    self.move_vector(&normalized.negated().multiplied(0.04), true);
+                    //self.location.add(&normalized.negated().multiplied(0.04));
+                    //self.set_orientation_from_vector(&normalized);
                 }
             },
             _ => {
@@ -213,6 +215,14 @@ impl Entity {
         self.closest_seen_enemy_point = None;
     }
 
+    pub fn move_vector(&mut self, vector: &point::Vector, update_orientation: bool) {
+        self.location.x += vector.x;
+        self.location.y += vector.y;
+        if update_orientation {
+            self.set_orientation_from_vector(&vector.negated());
+        }
+    }
+
     pub fn interact_with(&mut self, other: &Entity, map: &map::Map) {
         let max_dist = 0.55;
 
@@ -222,20 +232,25 @@ impl Entity {
         // Storing closest seen enemy position
         if 
             other.team_id != self.team_id &&
-            map.line_of_sight(&self.location, &other.location)  &&
+            // map.line_of_sight(&self.location, &other.location)  &&
             distance < 20.0
         {
             match &mut self.closest_seen_enemy_point {
                 Some(point) => {
                     let currently_stored_points_distance = self.location.dist_to(&point).length();
-                    if distance < currently_stored_points_distance {
+                    if 
+                        distance < currently_stored_points_distance  &&
+                        map.line_of_sight(&self.location, &other.location)
+                    {
                         // point.x = other.location.x;
                         // point.y = other.location.y;
                         self.closest_seen_enemy_point = Some(point::Point::new(other.location.x, other.location.y));
                     }
                 },
                 _ => {
-                    self.closest_seen_enemy_point = Some(point::Point::new(other.location.x, other.location.y));
+                    if map.line_of_sight(&self.location, &other.location) {
+                        self.closest_seen_enemy_point = Some(point::Point::new(other.location.x, other.location.y));
+                    }
                 }
             }
         }
@@ -246,10 +261,12 @@ impl Entity {
             let mut randomizer = rand::thread_rng();
             let x_value: f32 = randomizer.gen_range(-0.1, 0.1);
             let y_value: f32 = randomizer.gen_range(-0.1, 0.1);
-            self.location = self.location.added(&point::Vector::new(x_value, y_value));
+            //self.location = self.location.added(&point::Vector::new(x_value, y_value));
+            self.move_vector(&point::Vector::new(x_value, y_value), false);
         } else if distance < max_dist {
             let move_vect = dist_vect.normalized().multiplied((max_dist - distance) * 0.3);
-            self.location = self.location.added(&move_vect);
+            // self.location = self.location.added(&move_vect);
+            self.move_vector(&move_vect, false);
         }
     }
 
