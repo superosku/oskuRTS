@@ -193,7 +193,12 @@ pub fn main() -> Result<(), String> {
                 canvas.copy(&shadow_texture, None, rect).map_err(|e| e.to_string())?;
                 canvas.copy(
                     texture_holder.get_team_texture((entity.team_id) as usize)?,
-                    Rect::new(64 * entity.orientation as i32,0,64,128),
+                    Rect::new(
+                        64 * entity.orientation as i32,
+                        128 * (entity.id % 3) as i32,
+                        64,
+                        128
+                    ),
                     unit_texture_rect
                 )?;
 
