@@ -35,7 +35,7 @@ impl EntityHolder {
         }
     }
 
-    pub fn order_selected_units_to(&mut self, map: &map::Map, end_point: (f32, f32)) {
+    pub fn order_selected_units_to(&mut self, map: &map::Map, end_point: (f32, f32), task: entity::Task) {
         // TODO: Clean up this whole mess of a function....
 
         // Find out distinct goal points
@@ -91,7 +91,7 @@ impl EntityHolder {
                     }
                     path_queue.push(point::Point::new(end_point.0 as f32, end_point.1 as f32));
 
-                    entity.set_path(path_queue)
+                    entity.set_path(path_queue, task.clone());
                 }
             }
         }

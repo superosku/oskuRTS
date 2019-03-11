@@ -80,6 +80,9 @@ pub fn main() -> Result<(), String> {
         if keyboard_state.is_scancode_pressed(Scancode::A) {camera.move_center(-0.5,  0.0)}
         if keyboard_state.is_scancode_pressed(Scancode::D) {camera.move_center( 0.5,  0.0)}
 
+        let mut attack_move = false;
+        if keyboard_state.is_scancode_pressed(Scancode::Q) {attack_move = true};
+
         if mouse_state.left() {
             if left_pressed == false {
                 mouse_start_game_pos = mouse_game_pos;
@@ -106,7 +109,13 @@ pub fn main() -> Result<(), String> {
                 Event::KeyDown { keycode: Some(Keycode::K), .. } => {map.set(mouse_game_pos.0 as i32, mouse_game_pos.1 as i32, map::GroundType::Water)},
                 Event::KeyDown { keycode: Some(Keycode::L), .. } => {map.set(mouse_game_pos.0 as i32, mouse_game_pos.1 as i32, map::GroundType::Forest)},
                 Event::MouseButtonDown { mouse_btn: MouseButton::Right, .. } => {
-                    entity_holder.order_selected_units_to(&map, mouse_game_pos);
+                    let pos = point::Point::new(mouse_game_pos.0, mouse_game_pos.1);
+
+                    if attack_move {
+                        entity_holder.order_selected_units_to(&map, mouse_game_pos, entity::Task::AttackMove{point: pos});
+                    } else {
+                        entity_holder.order_selected_units_to(&map, mouse_game_pos, entity::Task::Move{point: pos});
+                    }
                 },
                 Event::KeyDown { keycode: Some(Keycode::N), .. } => {entity_holder.add_new_entity(mouse_game_pos.0, mouse_game_pos.1, 0);},
                 Event::KeyDown { keycode: Some(Keycode::M), .. } => {entity_holder.add_new_entity(mouse_game_pos.0, mouse_game_pos.1, 1);},

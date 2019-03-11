@@ -26,7 +26,7 @@ Instructions
 ```
 WASD -> Move the camrea
 mouse left click and drag -> Select units
-mouse right click -> Order selected units to go to mouse location
+mouse right click -> Order selected units to go to mouse location (hold Q for attack move)
 P -> Toggle debug view
 N -> Add unit to mouse position (hold to add many quickly)
 M -> Add enemy unit

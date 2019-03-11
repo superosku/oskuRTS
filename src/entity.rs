@@ -34,20 +34,45 @@ impl Projectile {
 }
 
 
+#[derive(Clone)]
+pub enum ResourceType {
+    Wood,
+    Gold,
+}
+
+
+#[derive(Clone)]
+pub enum Task {
+    Idle,
+
+    Move {point: point::Point},
+    AttackMove {point: point::Point},
+
+    Gather {point: point::Point, resource_type: ResourceType},
+}
+
+
 pub struct Entity {
     pub location: point::Point,
     pub id: u32,
 
+    // Storing pathfinding information
     pub waypoint_index: u32,
     pub path: Vec<point::Point>,
 
+    // For drawing
     pub orientation: u32,
 
+    // For fighting
     pub team_id: u32,
     pub hp: i32,
     pub cooldown: u32,
     pub closest_seen_enemy_point: Option<point::Point>,
+
+    // For ai handling
+    pub task: Task,
 }
+
 
 impl Entity {
     pub fn new(x: f32, y: f32, id: u32, team_id: u32) -> Entity {
@@ -64,6 +89,8 @@ impl Entity {
             hp: 100,
             cooldown: 0,
             closest_seen_enemy_point: None,
+
+            task: Task::Idle,
         }
     }
 
@@ -124,25 +151,61 @@ impl Entity {
             self.cooldown -= 1;
         }
 
-        let followed_path = self.follow_path_finding(map);
 
-        if !followed_path {
-            // Shoot possible enemy
-            match &self.closest_seen_enemy_point {Some(point) => {
+        let mut seeing_enemy = false;
+        match &self.closest_seen_enemy_point {
+            Some(point) => {
+                seeing_enemy = true;
+            },
+            _ => {
+            }
+        }
+        let mut moving = false;
+        let mut attack_moving = false;
+
+        match self.task {
+            Task::Move{..} => {
+                moving= true;
+            },
+            Task::AttackMove{..} => {
+                attack_moving = true;
+            },
+            _ => {}
+        }
+
+        // Attack
+        if seeing_enemy && !moving {
+            return self.attack_enemy()
+        }
+        // Move
+        if moving || attack_moving {
+            self.follow_path_finding(map);
+            return None
+        }
+
+        None
+    }
+
+    fn attack_enemy(&mut self) -> Option<Projectile> {
+        match &self.closest_seen_enemy_point {
+            Some(point) => {
                 let vector_to_enemy = self.location.dist_to(point);
+                // Move towards
                 if vector_to_enemy.length() > 10.0 {
                     self.move_vector(&vector_to_enemy.normalized().multiplied(-0.04), true);
-                    // self.location.add(&vector_to_enemy.normalized().multiplied(-0.04));
-                } else {
+                }
+                // Shoot
+                else {
                     if self.cooldown == 0 {
                         self.cooldown = 45;
                         return Some(Projectile::new(&self.location, point))
                     }
                 }
-            }, _ => {}}
+            }, _ => {
+                println!("This should not happen");
+            }
         }
-
-        return None
+        None
     }
 
     fn follow_path_finding(&mut self, map: &map::Map) -> bool {
@@ -150,7 +213,7 @@ impl Entity {
             return false;
         }
 
-        // Do this until next point is reachable
+        // Check if we can see further
         'outer1: loop {
             match self.path.get((self.waypoint_index + 1) as usize) {
                 Some(point) => {
@@ -163,7 +226,7 @@ impl Entity {
                 _ => {break 'outer1}
             }
         }
-        // Back off in point queue if point is not reachable anymore
+        // If we cant see waypoint, loop backwards
         'outer2: loop {
             if self.waypoint_index == 0 {
                 break 'outer2;
@@ -186,12 +249,10 @@ impl Entity {
                 let vec_to_waypoint = self.location.dist_to(point);
                 if vec_to_waypoint.length() < 0.1 && self.path.len() - 1 == self.waypoint_index as usize {
                     self.location = point::Point::new(point.x, point.y);
-                    self.set_path(Vec::new());
+                    self.order_stop();
                 } else {
                     let normalized = vec_to_waypoint.normalized();
                     self.move_vector(&normalized.negated().multiplied(0.04), true);
-                    //self.location.add(&normalized.negated().multiplied(0.04));
-                    //self.set_orientation_from_vector(&normalized);
                 }
             },
             _ => {
@@ -201,14 +262,18 @@ impl Entity {
         return true;
     }
 
-    pub fn set_path(&mut self, path: Vec<point::Point>) {
+    pub fn set_path(&mut self, path: Vec<point::Point>, task: Task) {
         self.waypoint_index = 0;
         self.path = path;
+
+        self.task = task;
     }
 
     pub fn order_stop(&mut self) {
         self.path = Vec::new();
         self.waypoint_index = 0;
+
+        self.task = Task::Idle;
     }
 
     pub fn clear_interaction_data(&mut self) {
@@ -232,7 +297,6 @@ impl Entity {
         // Storing closest seen enemy position
         if 
             other.team_id != self.team_id &&
-            // map.line_of_sight(&self.location, &other.location)  &&
             distance < 20.0
         {
             match &mut self.closest_seen_enemy_point {
@@ -242,14 +306,16 @@ impl Entity {
                         distance < currently_stored_points_distance  &&
                         map.line_of_sight(&self.location, &other.location)
                     {
-                        // point.x = other.location.x;
-                        // point.y = other.location.y;
-                        self.closest_seen_enemy_point = Some(point::Point::new(other.location.x, other.location.y));
+                        self.closest_seen_enemy_point = Some(
+                            point::Point::new(other.location.x, other.location.y)
+                        );
                     }
                 },
                 _ => {
                     if map.line_of_sight(&self.location, &other.location) {
-                        self.closest_seen_enemy_point = Some(point::Point::new(other.location.x, other.location.y));
+                        self.closest_seen_enemy_point = Some(
+                            point::Point::new(other.location.x, other.location.y)
+                        );
                     }
                 }
             }
@@ -261,11 +327,9 @@ impl Entity {
             let mut randomizer = rand::thread_rng();
             let x_value: f32 = randomizer.gen_range(-0.1, 0.1);
             let y_value: f32 = randomizer.gen_range(-0.1, 0.1);
-            //self.location = self.location.added(&point::Vector::new(x_value, y_value));
             self.move_vector(&point::Vector::new(x_value, y_value), false);
         } else if distance < max_dist {
             let move_vect = dist_vect.normalized().multiplied((max_dist - distance) * 0.3);
-            // self.location = self.location.added(&move_vect);
             self.move_vector(&move_vect, false);
         }
     }
