@@ -186,7 +186,6 @@ pub fn main() -> Result<(), String> {
             for entity in entity_holder.get_entity_refs() {
                 canvas.set_draw_color(Color::RGB(0, 0, 255));
                 let screen_center_pos = camera.game_to_screen(entity.location.x, entity.location.y);
-                let tile_size = (64.0 / camera.zoom) as u32;
                 let rect = Rect::new(
                     (screen_center_pos.0 - 1.0 * 32.0 / camera.zoom) as i32,
                     (screen_center_pos.1 - 1.0 * 32.0 / camera.zoom) as i32,
@@ -268,9 +267,45 @@ pub fn main() -> Result<(), String> {
 
             // Draw projectiles
             for projectile in entity_holder.projectiles.iter() {
+                let screen_center_pos = camera.game_to_screen(projectile.location.x, projectile.location.y);
+                let shadow_rect = Rect::new(
+                    (screen_center_pos.0 - 1.0 * 32.0 / camera.zoom) as i32,
+                    (screen_center_pos.1 - 1.0 * 32.0 / camera.zoom) as i32,
+                    tile_size,
+                    tile_size,
+                );
+                let rect = Rect::new(
+                    (screen_center_pos.0 - 1.0 * 32.0 / camera.zoom) as i32,
+                    (
+                        screen_center_pos.1 - 1.0 * 32.0 / camera.zoom -
+                        camera.get_tile_size() as f32 * 0.5 - // Throw should not start from ground
+                        camera.get_tile_size() as f32 * projectile.get_height() * 0.2 // Parabel
+                    ) as i32,
+                    tile_size,
+                    tile_size,
+                );
+
+                canvas.copy(
+                    &shadow_texture,
+                    None,
+                    shadow_rect
+                );
+                canvas.copy_ex(
+                    &texture_holder.arrow_texture,
+                    None,
+                    rect,
+                    (-57.2958 * projectile.angle as f64) - (45.0 + 180.0),
+                    None,
+                    false,
+                    false,
+                ).map_err(|e| e.to_string())?;
+
+                /*
                 let screen_pos = camera.game_to_screen(projectile.location.x, projectile.location.y);
+
                 canvas.set_draw_color(Color::RGB(0, 0, 0));
                 canvas.fill_rect(Rect::new(screen_pos.0 as i32 - 4, screen_pos.1 as i32 - 4, 8, 8))?;
+                */
             }
 
             // Draw mouse selection box

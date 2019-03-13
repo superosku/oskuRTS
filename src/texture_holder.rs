@@ -15,6 +15,8 @@ use sdl2::pixels::Color;
 
 pub struct TextureHolder<'a> {
     pub ground_texture: Texture<'a>,
+    pub arrow_texture: Texture<'a>,
+
     unit_textures: Vec<Texture<'a>>,
     unit_surface: Surface<'a>,
     unit_surface_mask: Surface<'a>,
@@ -65,11 +67,18 @@ impl<'a> TextureHolder<'a> {
         let ground_surface: Surface = LoadSurface::from_file("src/images/ground.png")?;
         let ground_texture: Texture<'a> = TextureHolder::surface_to_texture(&ground_surface, texture_creator)?;
 
+        let arrow_texture: Texture<'a> = TextureHolder::surface_to_texture(
+            &LoadSurface::from_file("src/images/arrow.png")?,
+            texture_creator
+        )?;
+
         let unit_surface: Surface = LoadSurface::from_file("src/images/unit_roster.png")?;
         let unit_surface_mask: Surface = LoadSurface::from_file("src/images/unit_roster_mask.png")?;
 
         let mut texture_holder = TextureHolder {
             ground_texture: ground_texture,
+            arrow_texture: arrow_texture,
+
             unit_surface: unit_surface,
             unit_surface_mask: unit_surface_mask,
             unit_textures: Vec::new(),
