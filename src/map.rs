@@ -4,9 +4,14 @@ use super::noise;
 #[derive(Copy, Clone, PartialEq)]
 pub enum GroundType {
     Empty,
+
     Grass,
     Water,
     Forest,
+
+    Sand,
+    Rock,
+    CutTrees,
 }
 
 pub struct Map {
@@ -24,6 +29,36 @@ impl Map {
             data: vec![GroundType::Grass; (data_size) as usize] // Vec::new()
         };
 
+        let mut height_noise = noise::ComplexNoise::new(4);
+        let mut tree_noise = noise::ComplexNoise::new(3);
+
+        for n in 0..data_size {
+            let x = (n % width) as i32;
+            let y = (n / width) as i32;
+
+            let height_noise_value = height_noise.value_at(x, y);
+            let mut ground_type = GroundType::Grass;
+            if height_noise_value < -0.2 {
+                ground_type = GroundType::Water;
+            } else if height_noise_value < -0.1 {
+                ground_type = GroundType::Sand;
+            } else if height_noise_value > 0.5 {
+                ground_type = GroundType::Rock;
+            }
+
+            if ground_type == GroundType::Grass && tree_noise.value_at(x, y) < -0.1 {
+                ground_type = GroundType::Forest;
+            }
+            /*
+            else if ground_type == GroundType::Grass && tree_noise.value_at(x, y) < -0.0 {
+                ground_type = GroundType::CutTrees;
+            }
+            */
+
+            new_map.data[n as usize] = ground_type;
+        }
+
+        /*
         let mut water_noise1 = noise::PerlinNoise::new(3);
         let mut water_noise2 = noise::PerlinNoise::new(6);
         let mut water_noise3 = noise::PerlinNoise::new(9);
@@ -54,6 +89,9 @@ impl Map {
                 new_map.data[n as usize] = GroundType::Water;
             }
         }
+
+        */
+
         return new_map;
     }
 
@@ -166,7 +204,10 @@ impl Map {
 
     pub fn point_moveable(&self, point: (i32, i32)) -> bool {
         let ground_type = self.get_at(point.0, point.1);
-        ground_type == GroundType::Grass
+        ground_type == GroundType::Grass ||
+            ground_type == GroundType::Sand ||
+            ground_type == GroundType::Rock ||
+            ground_type == GroundType::CutTrees
     }
 }
 

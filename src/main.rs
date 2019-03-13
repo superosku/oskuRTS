@@ -159,6 +159,9 @@ pub fn main() -> Result<(), String> {
                         map::GroundType::Grass => Ok(0),
                         map::GroundType::Water => Ok(2),
                         map::GroundType::Forest=> Ok(1),
+                        map::GroundType::Sand => Ok(3),
+                        map::GroundType::Rock => Ok(4),
+                        map::GroundType::CutTrees => Ok(5),
                         _ => Err("Invalid GroundType for drawing".to_string())
                     }?;
                     canvas.copy(
@@ -184,19 +187,20 @@ pub fn main() -> Result<(), String> {
 
             // Draw entities
             for entity in entity_holder.get_entity_refs() {
+                let unit_tile_size = (64.0 / camera.zoom) as u32;
                 canvas.set_draw_color(Color::RGB(0, 0, 255));
                 let screen_center_pos = camera.game_to_screen(entity.location.x, entity.location.y);
                 let rect = Rect::new(
                     (screen_center_pos.0 - 1.0 * 32.0 / camera.zoom) as i32,
                     (screen_center_pos.1 - 1.0 * 32.0 / camera.zoom) as i32,
-                    tile_size,
-                    tile_size,
+                    unit_tile_size,
+                    unit_tile_size,
                 );
                 let unit_texture_rect = Rect::new(
                     (screen_center_pos.0 - 1.0 * 32.0 / camera.zoom) as i32,
-                    (screen_center_pos.1 - 1.0 * 32.0 / camera.zoom) as i32 - tile_size as i32,
-                    tile_size,
-                    tile_size * 2,
+                    (screen_center_pos.1 - 1.0 * 32.0 / camera.zoom) as i32 - unit_tile_size as i32,
+                    unit_tile_size,
+                    unit_tile_size * 2,
                 );
                 canvas.copy(&shadow_texture, None, rect).map_err(|e| e.to_string())?;
                 canvas.copy(
@@ -246,16 +250,16 @@ pub fn main() -> Result<(), String> {
                 let health_persentage = entity.hp as f32 / entity_max_hp as f32;
 
                 let max_hp_rect = Rect::new(
-                    (screen_center_pos.0 - 1.0 * 32.0 / camera.zoom) as i32 - (tile_size as f32 * 0.2) as i32,
+                    (screen_center_pos.0 - 1.0 * 32.0 / camera.zoom) as i32 - (unit_tile_size as f32 * 0.2) as i32,
                     (screen_center_pos.1 + 1.0 * 32.0 / camera.zoom) as i32,
-                    (tile_size as f32 * 1.4) as u32,
-                    tile_size * 2 / 7,
+                    (unit_tile_size as f32 * 1.4) as u32,
+                    unit_tile_size * 2 / 7,
                 );
                 let hp_rect = Rect::new(
-                    (screen_center_pos.0 - 1.0 * 32.0 / camera.zoom) as i32 - (tile_size as f32 * 0.2) as i32,
+                    (screen_center_pos.0 - 1.0 * 32.0 / camera.zoom) as i32 - (unit_tile_size as f32 * 0.2) as i32,
                     (screen_center_pos.1 + 1.0 * 32.0 / camera.zoom) as i32,
-                    ((tile_size as f32 * 1.4) as f32 * health_persentage) as u32,
-                    tile_size * 2 / 7,
+                    ((unit_tile_size as f32 * 1.4) as f32 * health_persentage) as u32,
+                    unit_tile_size * 2 / 7,
                 );
                 canvas.set_draw_color(Color::RGB(0, 0, 0));
                 canvas.fill_rect(max_hp_rect)?;

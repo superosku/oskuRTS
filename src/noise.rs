@@ -71,4 +71,34 @@ impl PerlinNoise {
 }
 
 
+pub struct ComplexNoise {
+    perlin_1: PerlinNoise,
+    perlin_2: PerlinNoise,
+    perlin_3: PerlinNoise,
+    perlin_4: PerlinNoise,
+}
+
+
+impl ComplexNoise {
+    pub fn new(zoom_level: u32) -> ComplexNoise {
+        ComplexNoise {
+            perlin_1: PerlinNoise::new(zoom_level),
+            perlin_2: PerlinNoise::new(zoom_level * 2),
+            perlin_3: PerlinNoise::new(zoom_level * 3),
+            perlin_4: PerlinNoise::new(zoom_level * 5)
+        }
+    }
+
+    pub fn value_at(&mut self, x: i32, y: i32) -> f32 {
+        return 
+            self.perlin_4.value_at(x, y) +
+            self.perlin_3.value_at(x, y) / 2.0 +
+            self.perlin_2.value_at(x, y) / 3.0 +
+            self.perlin_1.value_at(x, y) / 5.0
+    }
+}
+
+
+
+
 
