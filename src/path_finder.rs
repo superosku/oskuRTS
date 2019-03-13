@@ -64,6 +64,11 @@ pub fn build_search_tree(map: &map::Map, goal_point: (i32, i32), start_points: &
     heap.push(HeapData::new(goal_point, None, start_points, 0.0));
 
     let mut counter = 0;
+
+    let mut unreached_start_points: HashMap<(i32, i32), bool> = HashMap::new();
+    for start_point in start_points.iter() {
+        unreached_start_points.insert(start_point.clone(), true);
+    }
     
     loop {
         // Pop stuuf from queue
@@ -117,13 +122,8 @@ pub fn build_search_tree(map: &map::Map, goal_point: (i32, i32), start_points: &
         }
 
         // Check if found everything
-        let mut all_satisfied = true; 
-        for start_point in start_points.iter() { // TODO: This loop is not ok
-            if !return_data.contains_key(start_point) {
-                all_satisfied = false;
-            }
-        }
-        if all_satisfied {
+        unreached_start_points.remove(&point);
+        if unreached_start_points.is_empty() {
             return return_data;
         }
 
