@@ -49,6 +49,7 @@ pub fn main() -> Result<(), String> {
     let texture_creator: TextureCreator<WindowContext> = canvas.texture_creator();
     
     let shadow_texture = texture_creator.load_texture("src/images/shadow.png")?;
+    let small_shadow_texture = texture_creator.load_texture("src/images/small_shadow.png")?;
 
     let mut camera: camera::Camera = camera::Camera::new(600, 600);
     let mut map: map::Map = map::Map::new_random(200, 200);
@@ -186,8 +187,9 @@ pub fn main() -> Result<(), String> {
             }
 
             // Draw entities
+            let unit_tile_size = (64.0 / camera.zoom) as u32;
+
             for entity in entity_holder.get_entity_refs() {
-                let unit_tile_size = (64.0 / camera.zoom) as u32;
                 canvas.set_draw_color(Color::RGB(0, 0, 255));
                 let screen_center_pos = camera.game_to_screen(entity.location.x, entity.location.y);
                 let rect = Rect::new(
@@ -275,8 +277,8 @@ pub fn main() -> Result<(), String> {
                 let shadow_rect = Rect::new(
                     (screen_center_pos.0 - 1.0 * 32.0 / camera.zoom) as i32,
                     (screen_center_pos.1 - 1.0 * 32.0 / camera.zoom) as i32,
-                    tile_size,
-                    tile_size,
+                    unit_tile_size,
+                    unit_tile_size,
                 );
                 let rect = Rect::new(
                     (screen_center_pos.0 - 1.0 * 32.0 / camera.zoom) as i32,
@@ -285,12 +287,12 @@ pub fn main() -> Result<(), String> {
                         camera.get_tile_size() as f32 * 0.5 - // Throw should not start from ground
                         camera.get_tile_size() as f32 * projectile.get_height() * 0.2 // Parabel
                     ) as i32,
-                    tile_size,
-                    tile_size,
+                    unit_tile_size,
+                    unit_tile_size,
                 );
 
                 canvas.copy(
-                    &shadow_texture,
+                    &small_shadow_texture,
                     None,
                     shadow_rect
                 );

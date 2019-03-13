@@ -26,7 +26,7 @@ impl Projectile {
 
     pub fn increment(&mut self) {
         let dist_vect = self.location.dist_to(&self.end_point);
-        if dist_vect.length() < 0.1 {
+        if dist_vect.length() < 0.11 {
             self.location.x = self.end_point.x;
             self.location.y = self.end_point.y;
         } else {
