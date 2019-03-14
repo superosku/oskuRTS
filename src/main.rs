@@ -297,7 +297,7 @@ pub fn main() -> Result<(), String> {
                     &small_shadow_texture,
                     None,
                     shadow_rect
-                );
+                )?;
                 canvas.copy_ex(
                     &texture_holder.arrow_texture,
                     None,

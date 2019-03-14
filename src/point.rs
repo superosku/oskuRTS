@@ -61,8 +61,7 @@ impl Vector {
     }
 
     pub fn angle(&self) -> f32 {
-        let mut angle = self.x.atan2(self.y);
-        angle
+        self.x.atan2(self.y)
     }
 }
 

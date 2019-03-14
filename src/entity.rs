@@ -124,10 +124,6 @@ impl Entity {
         self.hp -= amount as i32;
     }
 
-    pub fn add_force_vect(&mut self, force_vect: &point::Vector) {
-        self.location.add(&force_vect);
-    }
-
     pub fn is_inside(&self, corner_1: (f32, f32), corner_2: (f32, f32)) -> bool {
         let min_x = corner_1.0.min(corner_2.0) - 0.25;
         let min_y = corner_1.1.min(corner_2.1) - 0.25;
@@ -176,7 +172,7 @@ impl Entity {
 
         let mut seeing_enemy = false;
         match &self.closest_seen_enemy_point {
-            Some(point) => {
+            Some(_point) => {
                 seeing_enemy = true;
             },
             _ => {
