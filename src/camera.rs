@@ -11,8 +11,8 @@ pub struct Camera {
 impl Camera {
     pub fn new(window_w: u32, window_h: u32) -> Camera {
         return Camera {
-            center_x: 0.0,
-            center_y: 0.0,
+            center_x: 50.0,
+            center_y: 50.0,
             zoom: 4.0,
             window_w: window_w as i32,
             window_h: window_h as i32

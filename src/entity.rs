@@ -104,12 +104,16 @@ impl Entity {
             orientation: id % 8,
 
             team_id: team_id,
-            hp: 100,
+            hp: 200,
             cooldown: 0,
             closest_seen_enemy_point: None,
 
             task: Task::Idle,
         }
+    }
+
+    pub fn max_hp(&self) -> i32 {
+        200
     }
 
     pub fn alive(&self) -> bool {
@@ -195,6 +199,7 @@ impl Entity {
         if seeing_enemy && !moving {
             return self.attack_enemy()
         }
+
         // Move
         if moving || attack_moving {
             self.follow_path_finding(map);
@@ -244,6 +249,7 @@ impl Entity {
                 _ => {break 'outer1}
             }
         }
+
         // If we cant see waypoint, loop backwards
         'outer2: loop {
             if self.waypoint_index == 0 {

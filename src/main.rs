@@ -29,7 +29,7 @@ pub fn main() -> Result<(), String> {
     let _image_context = sdl2::image::init(InitFlag::PNG | InitFlag::JPG)?;
 
     let window: Window = video_subsystem
-        .window("rust demo", 1000, 800)
+        .window("rust demo", 1400, 1000)
         .resizable()
         .build()
         .expect("Error building window");
@@ -216,9 +216,11 @@ pub fn main() -> Result<(), String> {
                     unit_texture_rect
                 )?;
 
+                canvas.set_draw_color(Color::RGB(255, 255, 255));
                 if entity_holder.entity_selected(&entity) {
                     canvas.draw_rect(rect)?;
                 }
+                canvas.set_draw_color(Color::RGB(0, 0, 255));
                 if debug_enabled {
                     match &entity.get_waypoint() {
                         Some(w) => {
@@ -248,7 +250,7 @@ pub fn main() -> Result<(), String> {
                 }
 
                 // HP bar
-                let entity_max_hp= 100;
+                let entity_max_hp = entity.max_hp();
                 let health_persentage = entity.hp as f32 / entity_max_hp as f32;
 
                 let max_hp_rect = Rect::new(
