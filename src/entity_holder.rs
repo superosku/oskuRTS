@@ -29,8 +29,8 @@ impl EntityHolder {
     pub fn set_selection(&mut self, pos1: (f32, f32), pos2: (f32, f32)) {
         self.selected_entity_ids.clear();
         for entity in self.entities.iter() {
-            if entity.is_inside(pos1, pos2) && entity.team_id == 0 {
-                self.selected_entity_ids.insert(entity.id, true);
+            if entity.is_inside(pos1, pos2) && entity.team_id() == 0 {
+                self.selected_entity_ids.insert(entity.id(), true);
             }
         }
     }
@@ -42,7 +42,7 @@ impl EntityHolder {
         let mut goal_points: HashMap<(i32, i32), bool> = HashMap::new();
         for entity in self.entities.iter() {
             if self.entity_selected(entity) {
-                let key = (entity.location.x as i32, entity.location.y as i32);
+                let key = (entity.location().x as i32, entity.location().y as i32);
                 if !goal_points.contains_key(&key) {
                     goal_points.insert(key, true);
                 }
@@ -79,9 +79,9 @@ impl EntityHolder {
             // println!("Point {:?} {} {:?}", point, search_tree.contains_key(point), path);
 
             for entity in self.entities.iter_mut() {
-                if self.selected_entity_ids.contains_key(&entity.id) &&
-                    entity.location.x as i32 == point.0 &&
-                    entity.location.y as i32 == point.1
+                if self.selected_entity_ids.contains_key(&entity.id()) &&
+                    entity.location().x as i32 == point.0 &&
+                    entity.location().y as i32 == point.1
                 {
                     let mut path_queue = Vec::new();
 
@@ -100,7 +100,7 @@ impl EntityHolder {
     }
 
     pub fn entity_selected(&self, entity: &entity::Entity) -> bool {
-        self.selected_entity_ids.contains_key(&entity.id)
+        self.selected_entity_ids.contains_key(&entity.id())
     }
 
     pub fn add_new_entity(&mut self, x: f32, y: f32, team_id: u32) {
@@ -115,7 +115,7 @@ impl EntityHolder {
         }
         // Some bubblesort :)
         for i in 0..(self.entities.len() - 2) {
-            if self.entities[i].location.y > self.entities[i + 1].location.y {
+            if self.entities[i].location().y > self.entities[i + 1].location().y {
                 self.entities.swap(i, i+1);
             }
         }
@@ -151,7 +151,7 @@ impl EntityHolder {
 
     pub fn order_stop_selection(&mut self) {
         for entity in self.entities.iter_mut() {
-            if self.selected_entity_ids.contains_key(&entity.id) {
+            if self.selected_entity_ids.contains_key(&entity.id()) {
                 entity.order_stop();
             }
         }
@@ -176,7 +176,7 @@ impl EntityHolder {
             projectile.increment();
             if projectile.at_location() {
                 'inner: for entity in self.entities.iter_mut() {
-                    if entity.location.dist_to(&projectile.location).length() < 0.5 {
+                    if entity.location().dist_to(&projectile.location).length() < 0.5 {
                         entity.take_hit(12);
                         break 'inner;
                     }

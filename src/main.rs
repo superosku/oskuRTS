@@ -191,7 +191,10 @@ pub fn main() -> Result<(), String> {
 
             for entity in entity_holder.get_entity_refs() {
                 canvas.set_draw_color(Color::RGB(0, 0, 255));
-                let screen_center_pos = camera.game_to_screen(entity.location.x, entity.location.y);
+
+                let entity_location = entity.location();
+                let screen_center_pos = camera.game_to_screen(entity_location.x, entity_location.y);
+
                 let rect = Rect::new(
                     (screen_center_pos.0 - 1.0 * 32.0 / camera.zoom) as i32,
                     (screen_center_pos.1 - 1.0 * 32.0 / camera.zoom) as i32,
@@ -206,10 +209,10 @@ pub fn main() -> Result<(), String> {
                 );
                 canvas.copy(&shadow_texture, None, rect).map_err(|e| e.to_string())?;
                 canvas.copy(
-                    texture_holder.get_team_texture((entity.team_id) as usize)?,
+                    texture_holder.get_team_texture((entity.team_id()) as usize)?,
                     Rect::new(
-                        64 * entity.orientation as i32,
-                        128 * (entity.id % 3) as i32,
+                        64 * entity.orientation() as i32,
+                        128 * (entity.id() % 3) as i32,
                         64,
                         128
                     ),
@@ -233,14 +236,14 @@ pub fn main() -> Result<(), String> {
                         _ => {}
                     }
                     canvas.set_draw_color(Color::RGB(255, 0, 255));
-                    let stuff: Vec<Point> = entity.path.iter().map(|point| {
+                    let stuff: Vec<Point> = entity.path().iter().map(|point| {
                         let screen_point= camera.game_to_screen(point.x, point.y);
                         return Point::new(screen_point.0 as i32, screen_point.1 as i32);
                     }).collect();
                     canvas.draw_lines(stuff.as_slice())?;
 
                     canvas.set_draw_color(Color::RGB(0, 255, 255));
-                    match &entity.closest_seen_enemy_point { Some(point) => {
+                    match &entity.closest_seen_enemy_point() { Some(point) => {
                         let screen_end_pos = camera.game_to_screen(point.x, point.y);
                         canvas.draw_line(
                             Point::new(screen_center_pos.0 as i32, screen_center_pos.1 as i32),
@@ -251,7 +254,7 @@ pub fn main() -> Result<(), String> {
 
                 // HP bar
                 let entity_max_hp = entity.max_hp();
-                let health_persentage = entity.hp as f32 / entity_max_hp as f32;
+                let health_persentage = entity.hp() as f32 / entity_max_hp as f32;
 
                 let max_hp_rect = Rect::new(
                     (screen_center_pos.0 - 1.0 * 32.0 / camera.zoom) as i32 - (unit_tile_size as f32 * 0.2) as i32,

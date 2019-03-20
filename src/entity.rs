@@ -71,24 +71,24 @@ pub enum Task {
 
 
 pub struct Entity {
-    pub location: point::Point,
-    pub id: u32,
+    location: point::Point,
+    id: u32,
 
     // Storing pathfinding information
-    pub waypoint_index: u32,
-    pub path: Vec<point::Point>,
+    waypoint_index: u32,
+    path: Vec<point::Point>,
 
     // For drawing
-    pub orientation: u32,
+    orientation: u32,
 
     // For fighting
-    pub team_id: u32,
-    pub hp: i32,
-    pub cooldown: u32,
-    pub closest_seen_enemy_point: Option<point::Point>,
+    team_id: u32,
+    hp: i32,
+    cooldown: u32,
+    closest_seen_enemy_point: Option<point::Point>,
 
     // For ai handling
-    pub task: Task,
+    task: Task,
 }
 
 
@@ -111,6 +111,15 @@ impl Entity {
             task: Task::Idle,
         }
     }
+
+    // Getter methods
+    pub fn orientation(&self) -> u32 { self.orientation }
+    pub fn path(&self) -> &Vec<point::Point> { &self.path }
+    pub fn closest_seen_enemy_point(&self) -> &Option<point::Point> { &self.closest_seen_enemy_point }
+    pub fn location(&self) -> &point::Point { &self.location }
+    pub fn id(&self) -> u32 { self.id }
+    pub fn team_id(&self) -> u32 { self.team_id }
+    pub fn hp(&self) -> i32 { self.hp}
 
     pub fn max_hp(&self) -> i32 {
         200
