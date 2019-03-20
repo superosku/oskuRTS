@@ -4,10 +4,11 @@ use super::entity;
 use super::map;
 use super::point;
 use super::path_finder;
+use super::projectile::Projectile;
 
 pub struct EntityHolder {
     pub entities: Vec<entity::Entity>,
-    pub projectiles: Vec<entity::Projectile>,
+    pub projectiles: Vec<Projectile>,
 
     pub selected_entity_ids: HashMap<u32, bool>,
     pub id_counter: u32,
@@ -176,7 +177,7 @@ impl EntityHolder {
             projectile.increment();
             if projectile.at_location() {
                 'inner: for entity in self.entities.iter_mut() {
-                    if entity.location().dist_to(&projectile.location).length() < 0.5 {
+                    if entity.location().dist_to(projectile.location()).length() < 0.5 {
                         entity.take_hit(12);
                         break 'inner;
                     }
