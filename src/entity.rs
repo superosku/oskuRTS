@@ -192,8 +192,17 @@ impl Entity {
         }
 
         // Attack
-        if self.can_attack() && seeing_enemy && !moving {
-            return self.attack_enemy()
+        if 
+            // self.can_attack() && 
+            seeing_enemy &&
+            !moving
+        {
+            if self.can_attack() {
+                return self.attack_enemy()
+            } else {
+                self.run_from_enemy();
+                return None
+            }
         }
 
         // Move
@@ -203,6 +212,15 @@ impl Entity {
         }
 
         None
+    }
+
+    fn run_from_enemy(&mut self) {
+        match &self.closest_seen_enemy_point {
+            Some(point) => {
+                let vector_to_enemy = self.location.dist_to(point);
+                self.move_vector(&vector_to_enemy.normalized().multiplied(0.04), true);
+            }, _ => {}
+        }
     }
 
     fn attack_enemy(&mut self) -> Option<Projectile> {
@@ -335,7 +353,6 @@ impl Entity {
 
         // Storing closest seen enemy position
         if 
-            self.can_attack() &&
             other.team_id != self.team_id &&
             distance < self.seeing_distance() as f32
         {
