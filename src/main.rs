@@ -109,7 +109,7 @@ pub fn main() -> Result<(), String> {
                 },
                 Event::KeyDown { keycode: Some(Keycode::J), .. } => {map.set(mouse_game_pos.0 as i32, mouse_game_pos.1 as i32, map::GroundType::Grass)},
                 Event::KeyDown { keycode: Some(Keycode::K), .. } => {map.set(mouse_game_pos.0 as i32, mouse_game_pos.1 as i32, map::GroundType::Water)},
-                Event::KeyDown { keycode: Some(Keycode::L), .. } => {map.set(mouse_game_pos.0 as i32, mouse_game_pos.1 as i32, map::GroundType::Forest)},
+                // Event::KeyDown { keycode: Some(Keycode::L), .. } => {map.set(mouse_game_pos.0 as i32, mouse_game_pos.1 as i32, map::GroundType::Forest)},
                 Event::MouseButtonDown { mouse_btn: MouseButton::Right, .. } => {
                     let pos = point::Point::new(mouse_game_pos.0, mouse_game_pos.1);
 
@@ -155,15 +155,15 @@ pub fn main() -> Result<(), String> {
             let tile_size = camera.get_tile_size();
             let first_screen_pos_f = camera.game_to_screen(0.0, 0.0);
             let first_screen_pos = (first_screen_pos_f.0 as i32, first_screen_pos_f.1 as i32);
-            for x in 0..map.width {
-                for y in 0..map.height {
+            for x in 0..map.width() {
+                for y in 0..map.height() {
                     let texture_id: u32 = match map.get_at(x as i32, y as i32) {
                         map::GroundType::Grass => Ok(0),
                         map::GroundType::Water => Ok(2),
-                        map::GroundType::Forest=> Ok(1),
+                        // map::GroundType::Forest=> Ok(1),
                         map::GroundType::Sand => Ok(3),
                         map::GroundType::Rock => Ok(4),
-                        map::GroundType::CutTrees => Ok(5),
+                        // map::GroundType::CutTrees => Ok(5),
                         _ => Err("Invalid GroundType for drawing".to_string())
                     }?;
                     canvas.copy(
@@ -176,6 +176,25 @@ pub fn main() -> Result<(), String> {
                             tile_size,
                         )
                     )?;
+
+                    let texture_id: i32 = match map.get_at_second_level(x as i32, y as i32) {
+                        map::SecondLevelType::Tree => Ok(1),
+                        map::SecondLevelType::CutTree=> Ok(5),
+                        map::SecondLevelType::Empty => Ok(-1),
+                        _ => Err("Invalid GroundType for drawing".to_string())
+                    }?;
+                    if texture_id != -1 {
+                        canvas.copy(
+                            &texture_holder.ground_texture,
+                            Rect::new(texture_id * 64, 0, 64, 64),
+                            Rect::new(
+                                first_screen_pos.0 + (x * tile_size) as i32,
+                                first_screen_pos.1 + (y * tile_size) as i32,
+                                tile_size,
+                                tile_size,
+                            )
+                        )?;
+                    }
                 }
             }
 

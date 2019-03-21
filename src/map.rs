@@ -7,17 +7,26 @@ pub enum GroundType {
 
     Grass,
     Water,
-    Forest,
+    // Forest,
 
     Sand,
     Rock,
-    CutTrees,
+    // CutTrees,
+}
+
+#[derive(Copy, Clone, PartialEq)]
+pub enum SecondLevelType {
+    Empty,
+
+    Tree,
+    CutTree,
 }
 
 pub struct Map {
-    pub height: u32,
-    pub width: u32,
-    pub data: Vec<GroundType>
+    height: u32,
+    width: u32,
+    data: Vec<GroundType>,
+    second_level_data: Vec<SecondLevelType>
 }
 
 impl Map {
@@ -26,7 +35,8 @@ impl Map {
         let mut new_map: Map = Map {
             height: height,
             width: width,
-            data: vec![GroundType::Grass; (data_size) as usize] // Vec::new()
+            data: vec![GroundType::Grass; (data_size) as usize],
+            second_level_data: vec![SecondLevelType::Empty; (data_size) as usize],
         };
 
         let mut height_noise = noise::ComplexNoise::new(4);
@@ -46,53 +56,23 @@ impl Map {
                 ground_type = GroundType::Rock;
             }
 
-            if ground_type == GroundType::Grass && tree_noise.value_at(x, y) < -0.1 {
-                ground_type = GroundType::Forest;
+            if ground_type != GroundType::Water && tree_noise.value_at(x, y) < -0.1 {
+                new_map.second_level_data[n as usize] = SecondLevelType::Tree;
+                // ground_type = GroundType::Forest;
             }
-            /*
-            else if ground_type == GroundType::Grass && tree_noise.value_at(x, y) < -0.0 {
-                ground_type = GroundType::CutTrees;
-            }
-            */
 
             new_map.data[n as usize] = ground_type;
         }
 
-        /*
-        let mut water_noise1 = noise::PerlinNoise::new(3);
-        let mut water_noise2 = noise::PerlinNoise::new(6);
-        let mut water_noise3 = noise::PerlinNoise::new(9);
-
-        let mut tree_noise1 = noise::PerlinNoise::new(2);
-        let mut tree_noise2 = noise::PerlinNoise::new(4);
-        let mut tree_noise3 = noise::PerlinNoise::new(8);
-
-        for n in 0..data_size {
-            let x = n % width;
-            let y = n / width;
-
-            let noise_value = 
-                tree_noise1.value_at(x as i32, y as i32) * 1.0 +
-                tree_noise2.value_at(x as i32, y as i32) * 2.0 +
-                tree_noise3.value_at(x as i32, y as i32) * 4.0;
-
-            if noise_value < -0.7 {
-                new_map.data[n as usize] = GroundType::Forest;
-            }
-
-            let noise_value = 
-                water_noise1.value_at(x as i32, y as i32) * 1.0 +
-                water_noise2.value_at(x as i32, y as i32) * 2.0 +
-                water_noise3.value_at(x as i32, y as i32) * 4.0;
-
-            if noise_value < -0.7 {
-                new_map.data[n as usize] = GroundType::Water;
-            }
-        }
-
-        */
-
         return new_map;
+    }
+
+    pub fn height(&self) -> u32 {
+        self.height
+    }
+
+    pub fn width(&self) -> u32 {
+        self.width
     }
 
     pub fn set(&mut self, x: i32, y: i32, ground_type: GroundType) {
@@ -183,11 +163,24 @@ impl Map {
             )
     }
 
+    pub fn coord_to_index(&self, x:i32, y:i32) -> usize {
+        let index: usize = (x as u32 + (y as u32) * self.width) as usize;
+        index
+    }
+
+    pub fn get_at_second_level(&self, x: i32, y: i32) -> SecondLevelType {
+        if x < 0 || y < 0 || x >= self.width as i32 || y >= self.height as i32 {
+            return SecondLevelType::Empty
+        }
+        let index: usize = self.coord_to_index(x, y);
+        return self.second_level_data[index];
+    }
+
     pub fn get_at(&self, x: i32, y: i32) -> GroundType {
         if x < 0 || y < 0 || x >= self.width as i32 || y >= self.height as i32 {
             return GroundType::Empty
         }
-        let index: usize = (x as u32 + (y as u32) * self.width) as usize;
+        let index: usize = self.coord_to_index(x, y);
         return self.data[index];
     }
 
@@ -204,10 +197,12 @@ impl Map {
 
     pub fn point_moveable(&self, point: (i32, i32)) -> bool {
         let ground_type = self.get_at(point.0, point.1);
-        ground_type == GroundType::Grass ||
-            ground_type == GroundType::Sand ||
-            ground_type == GroundType::Rock ||
-            ground_type == GroundType::CutTrees
+        let second_level_type = self.get_at_second_level(point.0, point.1);
+
+        let base_moveable = ground_type == GroundType::Grass || ground_type == GroundType::Sand || ground_type == GroundType::Rock;
+        let second_level_moveable = !(second_level_type == SecondLevelType::Tree);
+
+        base_moveable && second_level_moveable
     }
 }
 
