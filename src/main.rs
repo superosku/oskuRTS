@@ -209,11 +209,16 @@ pub fn main() -> Result<(), String> {
                     unit_tile_size * 2,
                 );
                 canvas.copy(&shadow_texture, None, rect).map_err(|e| e.to_string())?;
+                let entity_type_id: u32 = match entity.entity_type() {
+                    entity::EntityType::Peasant => 0,
+                    entity::EntityType::Meelee => 1,
+                    entity::EntityType::Ranged => 2,
+                };
                 canvas.copy(
                     texture_holder.get_team_texture((entity.team_id()) as usize)?,
                     Rect::new(
                         64 * entity.orientation() as i32,
-                        128 * (entity.id() % 3) as i32,
+                        128 * entity_type_id as i32,
                         64,
                         128
                     ),

@@ -23,9 +23,18 @@ pub enum Task {
 }
 
 
+pub enum EntityType {
+    Peasant,
+    Ranged,
+    Meelee
+}
+
+
 pub struct Entity {
     location: point::Point,
     id: u32,
+
+    entity_type: EntityType,
 
     // Storing pathfinding information
     waypoint_index: u32,
@@ -46,10 +55,11 @@ pub struct Entity {
 
 
 impl Entity {
-    pub fn new(x: f32, y: f32, id: u32, team_id: u32) -> Entity {
+    pub fn new(x: f32, y: f32, id: u32, team_id: u32, entity_type: EntityType) -> Entity {
         Entity {
             location: point::Point::new(x, y),
             id: id,
+            entity_type: entity_type,
 
             waypoint_index: 0,
             path: Vec::new(),
@@ -66,6 +76,7 @@ impl Entity {
     }
 
     // Getter methods
+    pub fn entity_type(&self) -> &EntityType { &self.entity_type }
     pub fn orientation(&self) -> u32 { self.orientation }
     pub fn path(&self) -> &Vec<point::Point> { &self.path }
     pub fn closest_seen_enemy_point(&self) -> &Option<point::Point> { &self.closest_seen_enemy_point }
@@ -80,6 +91,27 @@ impl Entity {
 
     pub fn alive(&self) -> bool {
         self.hp > 0
+    }
+
+    pub fn is_ranged(&self) -> bool {
+        match self.entity_type {
+            EntityType::Peasant => false,
+            EntityType::Meelee => false,
+            _ => true
+        }
+    }
+
+    pub fn seeing_distance(&self) -> f32 {
+        15.0
+    }
+
+    pub fn attack_distance(&self) -> f32 {
+        match self.entity_type {
+            EntityType::Ranged => 8.0,
+            // EntityType::Meelee => 1.0,
+            EntityType::Meelee => 0.6,
+            _ => 0.0
+        }
     }
 
     pub fn take_hit(&mut self, amount: u32) {
@@ -124,13 +156,19 @@ impl Entity {
         return None
     }
 
+    pub fn can_attack(&self) -> bool {
+        match self.entity_type {
+            EntityType::Peasant => false,
+            _ => true
+        }
+    }
+
     pub fn ai_stuff(&mut self, map: &map::Map) -> Option<Projectile> {
         // Optionally returns projectile if such action was made
         
         if self.cooldown > 0 {
             self.cooldown -= 1;
         }
-
 
         let mut seeing_enemy = false;
         match &self.closest_seen_enemy_point {
@@ -154,7 +192,7 @@ impl Entity {
         }
 
         // Attack
-        if seeing_enemy && !moving {
+        if self.can_attack() && seeing_enemy && !moving {
             return self.attack_enemy()
         }
 
@@ -172,7 +210,7 @@ impl Entity {
             Some(point) => {
                 let vector_to_enemy = self.location.dist_to(point);
                 // Move towards
-                if vector_to_enemy.length() > 10.0 {
+                if vector_to_enemy.length() > self.attack_distance() {
                     self.move_vector(&vector_to_enemy.normalized().multiplied(-0.04), true);
                 }
                 // Shoot
@@ -270,6 +308,25 @@ impl Entity {
         }
     }
 
+    pub fn can_reach(&self, distance: f32, point: &point::Point, map: &map::Map) -> bool {
+        if distance > self.seeing_distance() as f32 {
+            return false
+        }
+
+        if self.is_ranged() {
+            if distance > self.attack_distance() as f32 {
+                let walking_distance = distance - self.attack_distance() as f32 - 0.5;
+                let walking_vector = self.location.dist_to(point).multiplied(walking_distance);
+                let walking_point = self.location.added(&walking_vector);
+                return map.line_of_sight_fat(self.location(), &walking_point, 0.25);
+            } else {
+                return true;
+            }
+        } else {
+            return map.line_of_sight_fat(&self.location(), point, 0.25);
+        }
+    }
+
     pub fn interact_with(&mut self, other: &Entity, map: &map::Map) {
         let max_dist = 0.55;
 
@@ -278,28 +335,22 @@ impl Entity {
 
         // Storing closest seen enemy position
         if 
+            self.can_attack() &&
             other.team_id != self.team_id &&
-            distance < 20.0
+            distance < self.seeing_distance() as f32
         {
-            match &mut self.closest_seen_enemy_point {
-                Some(point) => {
-                    let currently_stored_points_distance = self.location.dist_to(&point).length();
-                    if 
-                        distance < currently_stored_points_distance  &&
-                        map.line_of_sight(&self.location, &other.location)
-                    {
-                        self.closest_seen_enemy_point = Some(
-                            point::Point::new(other.location.x, other.location.y)
-                        );
-                    }
-                },
-                _ => {
-                    if map.line_of_sight(&self.location, &other.location) {
-                        self.closest_seen_enemy_point = Some(
-                            point::Point::new(other.location.x, other.location.y)
-                        );
-                    }
-                }
+            let currently_stored_points_distance = match &mut self.closest_seen_enemy_point {
+                Some(point) => self.location.dist_to(&point).length(),
+                _ => std::f32::INFINITY
+            };
+            if (
+                distance < currently_stored_points_distance &&
+                // self.can_reach(distance, other.location(), map)
+                map.line_of_sight(&self.location, &other.location)
+            ) {
+                self.closest_seen_enemy_point = Some(
+                    point::Point::new(other.location.x, other.location.y)
+                );
             }
         }
 

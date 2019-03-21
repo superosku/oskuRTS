@@ -105,7 +105,11 @@ impl EntityHolder {
     }
 
     pub fn add_new_entity(&mut self, x: f32, y: f32, team_id: u32) {
-        self.entities.push(entity::Entity::new(x, y, self.id_counter, team_id));
+        let mut entity_type: entity::EntityType = entity::EntityType::Meelee;
+        if self.id_counter & 3 == 0 { entity_type = entity::EntityType::Ranged }
+        if self.id_counter & 3 == 1 { entity_type = entity::EntityType::Peasant }
+
+        self.entities.push(entity::Entity::new(x, y, self.id_counter, team_id, entity_type));
         self.id_counter += 1;
     }
 
