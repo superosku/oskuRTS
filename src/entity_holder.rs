@@ -5,10 +5,12 @@ use super::map;
 use super::point;
 use super::path_finder;
 use super::projectile::Projectile;
+use super::building::Building;
 
 pub struct EntityHolder {
     pub entities: Vec<entity::Entity>,
     pub projectiles: Vec<Projectile>,
+    pub buildings: Vec<Building>,
 
     pub selected_entity_ids: HashMap<u32, bool>,
     pub id_counter: u32,
@@ -20,6 +22,7 @@ impl EntityHolder {
         EntityHolder {
             entities: Vec::new(),
             projectiles: Vec::new(),
+            buildings: Vec::new(),
 
             selected_entity_ids: HashMap::new(),
             id_counter: 0,
@@ -102,6 +105,18 @@ impl EntityHolder {
 
     pub fn entity_selected(&self, entity: &entity::Entity) -> bool {
         self.selected_entity_ids.contains_key(&entity.id())
+    }
+
+    pub fn add_new_building(&mut self, map: &mut map::Map, x: i32, y: i32, team_id: u32) {
+        let building = Building::new(x, y);
+
+        for x in building.x()..(building.x() + building.width()) {
+            for y in building.y()..(building.y() + building.height()) {
+                map.set_second_layer(x, y, map::SecondLevelType::Building)
+            }
+        }
+
+        self.buildings.push(building);
     }
 
     pub fn add_new_entity(&mut self, x: f32, y: f32, team_id: u32) {

@@ -18,6 +18,8 @@ pub enum GroundType {
 pub enum SecondLevelType {
     Empty,
 
+    Building,
+
     Tree,
     CutTree,
 }
@@ -73,6 +75,14 @@ impl Map {
 
     pub fn width(&self) -> u32 {
         self.width
+    }
+
+    pub fn set_second_layer(&mut self, x: i32, y: i32, second_type: SecondLevelType) {
+        if x < 0 || y < 0 || x >= self.width as i32 || y >= self.height as i32 {
+            return;
+        }
+        let index: usize = (x as u32 + (y as u32) * self.width) as usize;
+        self.second_level_data[index] = second_type;
     }
 
     pub fn set(&mut self, x: i32, y: i32, ground_type: GroundType) {
@@ -200,7 +210,7 @@ impl Map {
         let second_level_type = self.get_at_second_level(point.0, point.1);
 
         let base_moveable = ground_type == GroundType::Grass || ground_type == GroundType::Sand || ground_type == GroundType::Rock;
-        let second_level_moveable = !(second_level_type == SecondLevelType::Tree);
+        let second_level_moveable = second_level_type == SecondLevelType::Empty || second_level_type == SecondLevelType::CutTree;
 
         base_moveable && second_level_moveable
     }

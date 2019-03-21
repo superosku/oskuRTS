@@ -21,6 +21,7 @@ mod entity_holder;
 mod noise;
 mod texture_holder;
 mod projectile;
+mod building;
 
 
 pub fn main() -> Result<(), String> {
@@ -119,6 +120,14 @@ pub fn main() -> Result<(), String> {
                         entity_holder.order_selected_units_to(&map, mouse_game_pos, entity::Task::Move{point: pos});
                     }
                 },
+                Event::KeyDown { keycode: Some(Keycode::B), .. } => {
+                    entity_holder.add_new_building(
+                        &mut map,
+                        mouse_game_pos.0 as i32,
+                        mouse_game_pos.1 as i32,
+                        0
+                    );
+                },
                 Event::KeyDown { keycode: Some(Keycode::N), .. } => {entity_holder.add_new_entity(mouse_game_pos.0, mouse_game_pos.1, 0);},
                 Event::KeyDown { keycode: Some(Keycode::M), .. } => {entity_holder.add_new_entity(mouse_game_pos.0, mouse_game_pos.1, 1);},
                 Event::KeyDown { keycode: Some(Keycode::X), .. } => {entity_holder.order_stop_selection();},
@@ -180,6 +189,7 @@ pub fn main() -> Result<(), String> {
                     let texture_id: i32 = match map.get_at_second_level(x as i32, y as i32) {
                         map::SecondLevelType::Tree => Ok(1),
                         map::SecondLevelType::CutTree=> Ok(5),
+                        map::SecondLevelType::Building=> Ok(6),
                         map::SecondLevelType::Empty => Ok(-1),
                         _ => Err("Invalid GroundType for drawing".to_string())
                     }?;
@@ -299,6 +309,24 @@ pub fn main() -> Result<(), String> {
                 canvas.fill_rect(hp_rect)?;
                 canvas.set_draw_color(Color::RGB(0, 0, 0));
                 canvas.draw_rect(max_hp_rect)?;
+            }
+
+            // Draw buildings
+            for building in entity_holder.buildings.iter() {
+                let screen_top_left_pos = camera.game_to_screen(building.x() as f32, building.y() as f32);
+                let tile_size = camera.get_tile_size();
+                let rect = Rect::new(
+                    screen_top_left_pos.0 as i32,
+                    screen_top_left_pos.1 as i32 - tile_size as i32,
+                    (building.width() * tile_size as i32) as u32,
+                    ((building.height() + 1) * tile_size as i32) as u32,
+                );
+
+                canvas.copy(
+                   &texture_holder.building_1_texture,
+                   None,
+                   rect
+               );
             }
 
             // Draw projectiles
