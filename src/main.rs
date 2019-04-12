@@ -1,5 +1,8 @@
 extern crate sdl2;
 
+use std::collections::HashMap;
+use std::cmp::Ordering;
+
 use sdl2::image::{LoadTexture, InitFlag};
 use sdl2::pixels::Color;
 use sdl2::event::Event;
@@ -22,6 +25,9 @@ mod noise;
 mod texture_holder;
 mod projectile;
 mod building;
+mod game_state;
+
+use game_state::{GameState, GameEvent};
 
 
 pub fn main() -> Result<(), String> {
@@ -54,8 +60,8 @@ pub fn main() -> Result<(), String> {
     let small_shadow_texture = texture_creator.load_texture("src/images/small_shadow.png")?;
 
     let mut camera: camera::Camera = camera::Camera::new(600, 600);
-    let mut map: map::Map = map::Map::new_random(200, 200);
-    let mut entity_holder: entity_holder::EntityHolder = entity_holder::EntityHolder::new();
+
+    let mut game_state = GameState::new();
 
     let start_time = Instant::now();
     let mut last_time = start_time.elapsed();
@@ -65,17 +71,16 @@ pub fn main() -> Result<(), String> {
     let mut mouse_start_game_pos: (f32, f32) = (0.0, 0.0);
 
     let mut debug_enabled = false;
-
-    // println!("HINT SET MAYBE, {}", sdl2::hint::set("SDL_HINT_RENDER_SCALE_QUALITY", "1"));
     
     let texture_holder: texture_holder::TextureHolder = texture_holder::TextureHolder::new(&texture_creator)?;
 
-    map.line_of_sight(&point::Point::new(5.5, 5.5), &point::Point::new(0.5, 0.5));
+    let mut selected_entity_ids: HashMap<u32, bool> = HashMap::new();
 
     loop {
         // Events
         let mouse_state: MouseState = event_pump.mouse_state();
         let mouse_game_pos: (f32, f32) = camera.screen_to_game(mouse_state.x(), mouse_state.y());
+        let mouse_game_point: point::Point = point::Point::new(mouse_game_pos.0, mouse_game_pos.1);
         let keyboard_state = event_pump.keyboard_state();
 
         if keyboard_state.is_scancode_pressed(Scancode::S) {camera.move_center( 0.0,  0.5)}
@@ -93,7 +98,14 @@ pub fn main() -> Result<(), String> {
             left_pressed = true;
         } else {
             if left_pressed == true {
-                entity_holder.set_selection(mouse_game_pos, mouse_start_game_pos);
+                { // Setting selected entities
+                    selected_entity_ids.clear();
+                    for entity in game_state.entity_holder().entities.iter() {
+                        if entity.is_inside(mouse_game_pos, mouse_start_game_pos) && entity.team_id() == 0 {
+                            selected_entity_ids.insert(entity.id(), true);
+                        }
+                    }
+                }
             }
             left_pressed = false;
         }
@@ -108,29 +120,54 @@ pub fn main() -> Result<(), String> {
                 Event::MouseWheel { .. } => {
                     println!("Scroll happened");
                 },
-                Event::KeyDown { keycode: Some(Keycode::J), .. } => {map.set(mouse_game_pos.0 as i32, mouse_game_pos.1 as i32, map::GroundType::Grass)},
-                Event::KeyDown { keycode: Some(Keycode::K), .. } => {map.set(mouse_game_pos.0 as i32, mouse_game_pos.1 as i32, map::GroundType::Water)},
-                // Event::KeyDown { keycode: Some(Keycode::L), .. } => {map.set(mouse_game_pos.0 as i32, mouse_game_pos.1 as i32, map::GroundType::Forest)},
+                Event::KeyDown { keycode: Some(Keycode::J), .. } => {
+                    game_state.dispatch_event(GameEvent::SetMapPoint{
+                        location: mouse_game_point.as_i(),
+                        ground_type: map::GroundType::Grass
+                    });
+                },
+                Event::KeyDown { keycode: Some(Keycode::K), .. } => {
+                    game_state.dispatch_event(GameEvent::SetMapPoint{
+                        location: mouse_game_point.as_i(),
+                        ground_type: map::GroundType::Water
+                    });
+                },
                 Event::MouseButtonDown { mouse_btn: MouseButton::Right, .. } => {
-                    let pos = point::Point::new(mouse_game_pos.0, mouse_game_pos.1);
-
-                    if attack_move {
-                        entity_holder.order_selected_units_to(&map, mouse_game_pos, entity::Task::AttackMove{point: pos});
+                    let task: entity::Task = if attack_move {
+                        entity::Task::AttackMove {point: mouse_game_point}
                     } else {
-                        entity_holder.order_selected_units_to(&map, mouse_game_pos, entity::Task::Move{point: pos});
-                    }
+                        entity::Task::Move {point: mouse_game_point}
+                    };
+                    game_state.dispatch_event(GameEvent::OrderUnits{
+                        task: task,
+                        unit_ids: selected_entity_ids.clone(),
+                    })
                 },
                 Event::KeyDown { keycode: Some(Keycode::B), .. } => {
-                    entity_holder.add_new_building(
-                        &mut map,
-                        mouse_game_pos.0 as i32,
-                        mouse_game_pos.1 as i32,
-                        0
-                    );
+                    game_state.dispatch_event(GameEvent::AddBuilding{
+                        location: mouse_game_point.as_i()
+                    })
                 },
-                Event::KeyDown { keycode: Some(Keycode::N), .. } => {entity_holder.add_new_entity(mouse_game_pos.0, mouse_game_pos.1, 0);},
-                Event::KeyDown { keycode: Some(Keycode::M), .. } => {entity_holder.add_new_entity(mouse_game_pos.0, mouse_game_pos.1, 1);},
-                Event::KeyDown { keycode: Some(Keycode::X), .. } => {entity_holder.order_stop_selection();},
+                Event::KeyDown { keycode: Some(Keycode::N), .. } => {
+                    game_state.dispatch_event(GameEvent::InsertUnit{
+                        location: mouse_game_point.clone(),
+                        team_id: 0,
+                        unit_type: entity::EntityType::Ranged,
+                    });
+                },
+                Event::KeyDown { keycode: Some(Keycode::M), .. } => {
+                    game_state.dispatch_event(GameEvent::InsertUnit{
+                        location: mouse_game_point.clone(),
+                        team_id: 1,
+                        unit_type: entity::EntityType::Ranged,
+                    });
+                },
+                Event::KeyDown { keycode: Some(Keycode::X), .. } => {
+                    game_state.dispatch_event(GameEvent::OrderUnits{
+                        task: entity::Task::Idle,
+                        unit_ids: selected_entity_ids.clone(),
+                    })
+                },
                 _ => {}
             }
         }
@@ -144,59 +181,40 @@ pub fn main() -> Result<(), String> {
                     "Oskun peli, tick: {}, fps: {}, entities: {}",
                     tick,
                     (1.0 / (elapsed_time as f32 / 1000000000.0)) as i32,
-                    entity_holder.get_entity_refs().len()
+                    game_state.entity_holder().get_entity_refs().len()
                 );
                 mut_window.set_title(&title).map_err(|e| e.to_string())?;
             }
         }
 
         // Game handling
-        entity_holder.entity_ai(&map);
+        game_state.do_tick();
 
 
         { // Draw
-            entity_holder.sort_entities(); // Done for drawing purposes
-
             canvas.set_draw_color(Color::RGB(55, 55, 55));
             canvas.clear();
 
             // Draw ground
-            let tile_size = camera.get_tile_size();
-            let first_screen_pos_f = camera.game_to_screen(0.0, 0.0);
-            let first_screen_pos = (first_screen_pos_f.0 as i32, first_screen_pos_f.1 as i32);
-            for x in 0..map.width() {
-                for y in 0..map.height() {
-                    let texture_id: u32 = match map.get_at(x as i32, y as i32) {
-                        map::GroundType::Grass => Ok(0),
-                        map::GroundType::Water => Ok(2),
-                        // map::GroundType::Forest=> Ok(1),
-                        map::GroundType::Sand => Ok(3),
-                        map::GroundType::Rock => Ok(4),
-                        // map::GroundType::CutTrees => Ok(5),
-                        _ => Err("Invalid GroundType for drawing".to_string())
-                    }?;
-                    canvas.copy(
-                        &texture_holder.ground_texture,
-                        Rect::new(texture_id as i32 * 64, 0, 64, 64),
-                        Rect::new(
-                            first_screen_pos.0 + (x * tile_size) as i32,
-                            first_screen_pos.1 + (y * tile_size) as i32,
-                            tile_size,
-                            tile_size,
-                        )
-                    )?;
-
-                    let texture_id: i32 = match map.get_at_second_level(x as i32, y as i32) {
-                        map::SecondLevelType::Tree => Ok(1),
-                        map::SecondLevelType::CutTree=> Ok(5),
-                        map::SecondLevelType::Building=> Ok(6),
-                        map::SecondLevelType::Empty => Ok(-1),
-                        _ => Err("Invalid GroundType for drawing".to_string())
-                    }?;
-                    if texture_id != -1 {
+            {
+                let map = game_state.map();
+                let tile_size = camera.get_tile_size();
+                let first_screen_pos_f = camera.game_to_screen(0.0, 0.0);
+                let first_screen_pos = (first_screen_pos_f.0 as i32, first_screen_pos_f.1 as i32);
+                for x in 0..map.width() {
+                    for y in 0..map.height() {
+                        let texture_id: u32 = match map.get_at(x as i32, y as i32) {
+                            map::GroundType::Grass => Ok(0),
+                            map::GroundType::Water => Ok(2),
+                            // map::GroundType::Forest=> Ok(1),
+                            map::GroundType::Sand => Ok(3),
+                            map::GroundType::Rock => Ok(4),
+                            // map::GroundType::CutTrees => Ok(5),
+                            _ => Err("Invalid GroundType for drawing".to_string())
+                        }?;
                         canvas.copy(
                             &texture_holder.ground_texture,
-                            Rect::new(texture_id * 64, 0, 64, 64),
+                            Rect::new(texture_id as i32 * 64, 0, 64, 64),
                             Rect::new(
                                 first_screen_pos.0 + (x * tile_size) as i32,
                                 first_screen_pos.1 + (y * tile_size) as i32,
@@ -204,13 +222,33 @@ pub fn main() -> Result<(), String> {
                                 tile_size,
                             )
                         )?;
+
+                        let texture_id: i32 = match map.get_at_second_level(x as i32, y as i32) {
+                            map::SecondLevelType::Tree => Ok(1),
+                            map::SecondLevelType::CutTree=> Ok(5),
+                            map::SecondLevelType::Building=> Ok(6),
+                            map::SecondLevelType::Empty => Ok(-1),
+                            _ => Err("Invalid GroundType for drawing".to_string())
+                        }?;
+                        if texture_id != -1 {
+                            canvas.copy(
+                                &texture_holder.ground_texture,
+                                Rect::new(texture_id * 64, 0, 64, 64),
+                                Rect::new(
+                                    first_screen_pos.0 + (x * tile_size) as i32,
+                                    first_screen_pos.1 + (y * tile_size) as i32,
+                                    tile_size,
+                                    tile_size,
+                                )
+                            )?;
+                        }
                     }
                 }
             }
 
             // Draw last search tree size
             if debug_enabled {
-                for point in entity_holder.debug_search_tree.keys() {
+                for point in game_state.entity_holder().debug_search_tree.keys() {
                     let screen_pos = camera.game_to_screen(point.0 as f32 + 0.5, point.1 as f32 + 0.5);
                     canvas.draw_rect(Rect::new(screen_pos.0 as i32 - 2, screen_pos.1 as i32 - 2, 4, 4))?;
                 }
@@ -219,7 +257,19 @@ pub fn main() -> Result<(), String> {
             // Draw entities
             let unit_tile_size = (64.0 / camera.zoom) as u32;
 
-            for entity in entity_holder.get_entity_refs() {
+            // let entities = game_state.entity_holder().get_entity_refs();
+            let ref_to_entities: &Vec<entity::Entity> = game_state.entity_holder().get_entity_refs(); //.map(|e| &e).collect();
+            let mut entity_refs: Vec<&entity::Entity> = ref_to_entities.iter().map(|e| e).collect();
+
+            entity_refs.sort_by(
+                |a, b|
+                if a.location().y > b.location().y {Ordering::Greater} else {Ordering::Less}
+            );
+
+            // entities_sorted.sort_by(|a, b| a.location().y > b.location().y);
+
+            // for entity in game_state.entity_holder().get_entity_refs() {
+            for entity in entity_refs {
                 canvas.set_draw_color(Color::RGB(0, 0, 255));
 
                 let entity_location = entity.location();
@@ -255,7 +305,7 @@ pub fn main() -> Result<(), String> {
                 )?;
 
                 canvas.set_draw_color(Color::RGB(255, 255, 255));
-                if entity_holder.entity_selected(&entity) {
+                if selected_entity_ids.contains_key(&entity.id()) {
                     canvas.draw_rect(rect)?;
                 }
                 canvas.set_draw_color(Color::RGB(0, 0, 255));
@@ -312,7 +362,7 @@ pub fn main() -> Result<(), String> {
             }
 
             // Draw buildings
-            for building in entity_holder.buildings.iter() {
+            for building in game_state.entity_holder().buildings.iter() {
                 let screen_top_left_pos = camera.game_to_screen(building.x() as f32, building.y() as f32);
                 let tile_size = camera.get_tile_size();
                 let rect = Rect::new(
@@ -330,7 +380,7 @@ pub fn main() -> Result<(), String> {
             }
 
             // Draw projectiles
-            for projectile in entity_holder.projectiles.iter() {
+            for projectile in game_state.entity_holder().projectiles.iter() {
                 let screen_center_pos = camera.game_to_screen(projectile.location().x, projectile.location().y);
                 let shadow_rect = Rect::new(
                     (screen_center_pos.0 - 1.0 * 32.0 / camera.zoom) as i32,

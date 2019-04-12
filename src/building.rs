@@ -7,10 +7,10 @@ pub struct Building {
 }
 
 impl Building {
-    pub fn new(x: i32, y: i32) -> Building {
+    pub fn new(location: (i32, i32)) -> Building {
         Building {
-            x: x,
-            y: y,
+            x: location.0,
+            y: location.1,
         }
     }
 

@@ -387,7 +387,7 @@ impl Entity {
     pub fn interact_with_map(&mut self, map: &map::Map) {
         let treshold = 0.25;
 
-        let int_loc = self.location.as_int();
+        let int_loc = self.location.as_i();
         let loc_x_rem = self.location.x % 1.0;
         let loc_y_rem = self.location.y % 1.0;
         let abs_loc_x_rem = (loc_x_rem - 0.5).abs();

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use super::entity;
+use super::entity::{Entity, Task, EntityType};
 use super::map;
 use super::point;
 use super::path_finder;
@@ -8,11 +8,10 @@ use super::projectile::Projectile;
 use super::building::Building;
 
 pub struct EntityHolder {
-    pub entities: Vec<entity::Entity>,
+    pub entities: Vec<Entity>,
     pub projectiles: Vec<Projectile>,
     pub buildings: Vec<Building>,
 
-    pub selected_entity_ids: HashMap<u32, bool>,
     pub id_counter: u32,
     pub debug_search_tree: HashMap<(i32, i32), Option<(i32, i32)>> // For debug drawings of the search tree
 }
@@ -24,29 +23,38 @@ impl EntityHolder {
             projectiles: Vec::new(),
             buildings: Vec::new(),
 
-            selected_entity_ids: HashMap::new(),
             id_counter: 0,
             debug_search_tree: HashMap::new(),
         }
     }
 
-    pub fn set_selection(&mut self, pos1: (f32, f32), pos2: (f32, f32)) {
-        self.selected_entity_ids.clear();
-        for entity in self.entities.iter() {
-            if entity.is_inside(pos1, pos2) && entity.team_id() == 0 {
-                self.selected_entity_ids.insert(entity.id(), true);
-            }
-        }
-    }
-
-    pub fn order_selected_units_to(&mut self, map: &map::Map, end_point: (f32, f32), task: entity::Task) {
+    pub fn order_entities(
+        &mut self,
+        map: &map::Map,
+        task: Task,
+        entity_ids: HashMap<u32, bool>
+    ) {
         // TODO: Clean up this whole mess of a function....
+
+        // Get the end_point from task or return
+        let end_point = match task {
+            Task::Move {point} |
+            Task::AttackMove {point} => point,
+            Task::Idle => {
+                self.order_stop(entity_ids);
+                return
+            },
+            _ => {
+                println!("Warning: Unknown order");
+                return
+            }
+        };
 
         // Find out distinct goal points
         let mut goal_points: HashMap<(i32, i32), bool> = HashMap::new();
         for entity in self.entities.iter() {
-            if self.entity_selected(entity) {
-                let key = (entity.location().x as i32, entity.location().y as i32);
+            if entity_ids.contains_key(&entity.id()) {
+                let key = entity.location().as_i();
                 if !goal_points.contains_key(&key) {
                     goal_points.insert(key, true);
                 }
@@ -58,7 +66,7 @@ impl EntityHolder {
         }
 
         let search_tree: HashMap<(i32, i32), Option<(i32, i32)>> =
-            path_finder::build_search_tree(map, (end_point.0 as i32, end_point.1 as i32), &distinct_points);
+            path_finder::build_search_tree(map, end_point.as_i(), &distinct_points);
 
         for point in distinct_points.iter() {
             let mut path: Vec<(i32, i32)> = Vec::new();
@@ -80,20 +88,18 @@ impl EntityHolder {
                 path.push(*next_point);
                 old_point = next_point;
             }
-            // println!("Point {:?} {} {:?}", point, search_tree.contains_key(point), path);
 
             for entity in self.entities.iter_mut() {
-                if self.selected_entity_ids.contains_key(&entity.id()) &&
+                if entity_ids.contains_key(&entity.id()) &&
                     entity.location().x as i32 == point.0 &&
                     entity.location().y as i32 == point.1
                 {
                     let mut path_queue = Vec::new();
 
                     for p in path.iter() {
-                        // path_queue.push_back(point::Point::new(p.0 as f32 + 0.5, p.1 as f32 + 0.5));
                         path_queue.push(point::Point::new(p.0 as f32 + 0.5, p.1 as f32 + 0.5));
                     }
-                    path_queue.push(point::Point::new(end_point.0 as f32, end_point.1 as f32));
+                    path_queue.push(end_point.clone());
 
                     entity.set_path(path_queue, task.clone());
                 }
@@ -103,12 +109,8 @@ impl EntityHolder {
         self.debug_search_tree = search_tree;
     }
 
-    pub fn entity_selected(&self, entity: &entity::Entity) -> bool {
-        self.selected_entity_ids.contains_key(&entity.id())
-    }
-
-    pub fn add_new_building(&mut self, map: &mut map::Map, x: i32, y: i32, team_id: u32) {
-        let building = Building::new(x, y);
+    pub fn add_new_building(&mut self, map: &mut map::Map, location: (i32, i32), team_id: u32) {
+        let building = Building::new(location);
 
         for x in building.x()..(building.x() + building.width()) {
             for y in building.y()..(building.y() + building.height()) {
@@ -120,28 +122,15 @@ impl EntityHolder {
     }
 
     pub fn add_new_entity(&mut self, x: f32, y: f32, team_id: u32) {
-        let mut entity_type: entity::EntityType = entity::EntityType::Meelee;
-        if self.id_counter & 3 == 0 { entity_type = entity::EntityType::Ranged }
-        if self.id_counter & 3 == 1 { entity_type = entity::EntityType::Peasant }
+        let mut entity_type: EntityType = EntityType::Meelee;
+        if self.id_counter % 3 == 0 { entity_type = EntityType::Ranged }
+        if self.id_counter % 3 == 1 { entity_type = EntityType::Peasant }
 
-        self.entities.push(entity::Entity::new(x, y, self.id_counter, team_id, entity_type));
+        self.entities.push(Entity::new(x, y, self.id_counter, team_id, entity_type));
         self.id_counter += 1;
     }
 
-    pub fn sort_entities(&mut self) {
-        // TODO: This is not so nice way to do this
-        if self.entities.len() < 2 {
-            return
-        }
-        // Some bubblesort :)
-        for i in 0..(self.entities.len() - 2) {
-            if self.entities[i].location().y > self.entities[i + 1].location().y {
-                self.entities.swap(i, i+1);
-            }
-        }
-    }
-
-    pub fn get_entity_refs(&self) -> &Vec<entity::Entity> {
+    pub fn get_entity_refs(&self) -> &Vec<Entity> {
         return &self.entities
     }
 
@@ -169,9 +158,9 @@ impl EntityHolder {
         }
     }
 
-    pub fn order_stop_selection(&mut self) {
+    pub fn order_stop(&mut self, entity_ids: HashMap<u32, bool>) {
         for entity in self.entities.iter_mut() {
-            if self.selected_entity_ids.contains_key(&entity.id()) {
+            if entity_ids.contains_key(&entity.id()) {
                 entity.order_stop();
             }
         }

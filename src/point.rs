@@ -66,7 +66,7 @@ impl Vector {
 }
 
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Point {
     pub x: f32,
     pub y: f32,
@@ -96,8 +96,12 @@ impl Point {
         )
     }
 
-    pub fn as_int(&self) -> (i32, i32) {
+    pub fn as_i(&self) -> (i32, i32) {
         (self.x as i32, self.y as i32)
+    }
+
+    pub fn as_f(&self) -> (f32, f32) {
+        (self.x, self.y)
     }
 }
 
