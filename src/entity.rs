@@ -4,6 +4,8 @@ use super::point;
 use super::map;
 use super::projectile::Projectile;
 
+use super::binary_helpers::{Binaryable, u32_as_bytes, i32_as_bytes, f32_as_bytes};
+
 
 #[derive(Clone)]
 pub enum ResourceType {
@@ -23,6 +25,15 @@ pub enum Task {
 }
 
 
+impl Task {
+    fn as_binary(&self) -> Vec<u8> {
+
+        Vec::new()
+    }
+}
+
+
+#[derive(Clone)]
 pub enum EntityType {
     Peasant,
     Ranged,
@@ -51,6 +62,34 @@ pub struct Entity {
 
     // For ai handling
     task: Task,
+}
+
+
+impl Binaryable for Entity {
+    fn as_binary(&self) -> Vec<u8> {
+        let mut binary_data: Vec<u8> = Vec::new();
+
+        binary_data.extend(f32_as_bytes(self.location.x));
+        binary_data.extend(f32_as_bytes(self.location.y));
+        binary_data.extend(u32_as_bytes(self.id));
+        binary_data.push(self.entity_type.clone() as u8);
+        binary_data.extend(u32_as_bytes(self.waypoint_index));
+        binary_data.extend(u32_as_bytes(self.orientation));
+        binary_data.extend(u32_as_bytes(self.team_id));
+        binary_data.extend(i32_as_bytes(self.hp));
+        binary_data.extend(u32_as_bytes(self.cooldown));
+
+        let mut path_binary: Vec<u8> = Vec::new();
+        for path_point in self.path.iter() {
+            path_binary.extend(f32_as_bytes(path_point.x));
+            path_binary.extend(f32_as_bytes(path_point.y));
+        }
+        // let path_binary_length: u32 = path_binary.len() as u32;
+        // binary_data.extend(u32_as_bytes(path_binary_length));
+        binary_data.extend(path_binary);
+
+        binary_data
+    }
 }
 
 

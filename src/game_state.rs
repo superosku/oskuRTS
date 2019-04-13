@@ -1,12 +1,17 @@
 
 
+use std::fs;
+
+
 use std::collections::HashMap;
 
 
 use super::point::Point;
 use super::map::{Map, GroundType};
-use super::entity_holder::EntityHolder;
+use super::entity_holder::{EntityHolder};
 use super::entity::{EntityType, Task};
+
+use super::binary_helpers::Binaryable;
 
 
 pub enum GameEvent {
@@ -39,11 +44,23 @@ pub struct GameState {
 }
 
 
+impl Binaryable for GameState {
+    fn as_binary(&self) -> Vec<u8> {
+        let mut binary_data: Vec<u8> = Vec::new();
+
+        binary_data.extend(self.map.as_padded_binary());
+        binary_data.extend(self.entity_holder.as_padded_binary());
+
+        binary_data
+    }
+}
+
+
 impl GameState {
     pub fn new() -> GameState {
         GameState {
             tick: 0,
-            map: Map::new_random(50, 50),
+            map: Map::new_random(100, 50),
             entity_holder: EntityHolder::new(),
             event_log: Vec::new(),
         }
@@ -84,6 +101,13 @@ impl GameState {
 
     pub fn dispatch_event(&mut self, game_event: GameEvent) {
         self.event_log.push(game_event);
+    }
+
+    pub fn save_to_file(&self) {
+        println!("GameState saved to file");
+        let binary_data = self.as_binary();
+
+        fs::write("saved_game.dat", binary_data).expect("Unable to write file");
     }
 }
 

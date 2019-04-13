@@ -1,9 +1,19 @@
 
+use super::binary_helpers::{Binaryable, u32_as_bytes, i32_as_bytes, f32_as_bytes};
 
 
 pub struct Building {
     x: i32,
     y: i32,
+}
+
+impl Binaryable for Building {
+    fn as_binary(&self) -> Vec<u8> {
+        let mut binary_data: Vec<u8> = Vec::new();
+        binary_data.extend(i32_as_bytes(self.x));
+        binary_data.extend(i32_as_bytes(self.y));
+        binary_data
+    }
 }
 
 impl Building {

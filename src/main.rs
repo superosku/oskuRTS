@@ -26,6 +26,7 @@ mod texture_holder;
 mod projectile;
 mod building;
 mod game_state;
+mod binary_helpers;
 
 use game_state::{GameState, GameEvent};
 
@@ -167,6 +168,9 @@ pub fn main() -> Result<(), String> {
                         task: entity::Task::Idle,
                         unit_ids: selected_entity_ids.clone(),
                     })
+                },
+                Event::KeyDown { keycode: Some(Keycode::T), .. } => {
+                    game_state.save_to_file();
                 },
                 _ => {}
             }

@@ -6,6 +6,7 @@ use super::point;
 use super::path_finder;
 use super::projectile::Projectile;
 use super::building::Building;
+use super::binary_helpers::{Binaryable, u32_as_bytes, vec_as_bytes};
 
 pub struct EntityHolder {
     pub entities: Vec<Entity>,
@@ -15,6 +16,21 @@ pub struct EntityHolder {
     pub id_counter: u32,
     pub debug_search_tree: HashMap<(i32, i32), Option<(i32, i32)>> // For debug drawings of the search tree
 }
+
+
+impl Binaryable for EntityHolder {
+    fn as_binary(&self) -> Vec<u8> {
+        let mut binary_data: Vec<u8> = Vec::new();
+        
+        binary_data.extend(u32_as_bytes(self.id_counter));
+        binary_data.extend(vec_as_bytes(&self.entities));
+        binary_data.extend(vec_as_bytes(&self.projectiles));
+        binary_data.extend(vec_as_bytes(&self.buildings));
+
+        binary_data
+    }
+}
+
 
 impl EntityHolder {
     pub fn new() -> EntityHolder {

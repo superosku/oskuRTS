@@ -1,5 +1,7 @@
+use std::mem::transmute;
 use super::point;
 use super::noise;
+use super::binary_helpers::{Binaryable, u32_as_bytes};
 
 #[derive(Copy, Clone, PartialEq)]
 pub enum GroundType {
@@ -30,6 +32,24 @@ pub struct Map {
     data: Vec<GroundType>,
     second_level_data: Vec<SecondLevelType>
 }
+
+
+impl Binaryable for Map {
+    fn as_binary(&self) -> Vec<u8> {
+        let mut binary_data: Vec<u8> = Vec::new();
+
+        binary_data.extend(u32_as_bytes(self.width));
+        binary_data.extend(u32_as_bytes(self.height));
+
+        let map_data: Vec<u8> = self.data.iter().map(|i| *i as u8).collect();
+        binary_data.extend(map_data);
+        let map_data: Vec<u8> = self.second_level_data.iter().map(|i| *i as u8).collect();
+        binary_data.extend(map_data);
+
+        binary_data
+    }
+}
+
 
 impl Map {
     pub fn new_random(width: u32, height: u32) -> Map {
