@@ -1,7 +1,8 @@
 use std::mem::transmute;
 use super::point;
 use super::noise;
-use super::binary_helpers::{Binaryable, u32_as_bytes};
+use super::binary_helpers::Binaryable;
+use super::binary_helpers;
 
 #[derive(Copy, Clone, PartialEq)]
 pub enum GroundType {
@@ -38,8 +39,8 @@ impl Binaryable for Map {
     fn as_binary(&self) -> Vec<u8> {
         let mut binary_data: Vec<u8> = Vec::new();
 
-        binary_data.extend(u32_as_bytes(self.width));
-        binary_data.extend(u32_as_bytes(self.height));
+        binary_data.extend(binary_helpers::u32_as_bytes(self.width));
+        binary_data.extend(binary_helpers::u32_as_bytes(self.height));
 
         let map_data: Vec<u8> = self.data.iter().map(|i| *i as u8).collect();
         binary_data.extend(map_data);
@@ -48,18 +49,76 @@ impl Binaryable for Map {
 
         binary_data
     }
+
+    fn from_binary(binary_data: Vec<u8>) -> Map {
+        let (width, binary_data) = binary_helpers::pop_u32(binary_data);
+        let (height, binary_data) = binary_helpers::pop_u32(binary_data);
+
+        let data_size = width * height;
+        let mut new_map = Map::new(width, height);
+
+        let (first_level_data, second_level_data) = binary_helpers::pop_bytes_from_vec(binary_data, data_size);
+
+        for n in 0..data_size {
+            new_map.data[n as usize] = match first_level_data.get(n as usize) {
+                Some(value) => {
+                    match value {
+                        0 => GroundType::Empty,
+                        1 => GroundType::Grass,
+                        2 => GroundType::Water,
+                        3 => GroundType::Sand,
+                        4 => GroundType::Rock,
+                        _ => {
+                            println!("Unhandled data in map loading");
+                            GroundType::Empty
+                        },
+                    }
+                    // GroundType::Grass
+                },
+                _ => {
+                    println!("This should not happen");
+                    GroundType::Empty
+                },
+            };
+            new_map.second_level_data[n as usize] = match second_level_data.get(n as usize) {
+                Some(value) => {
+                    match value {
+                        0 => SecondLevelType::Empty,
+                        1 => SecondLevelType::Building,
+                        2 => SecondLevelType::Tree,
+                        3 => SecondLevelType::CutTree,
+                        _ => {
+                            println!("Unhandled data in map loading");
+                            SecondLevelType::Empty
+                        },
+                    }
+                },
+                _ => {
+                    println!("This should not happen");
+                    SecondLevelType::Empty
+                },
+            };
+        }
+
+        new_map
+    }
 }
 
 
 impl Map {
-    pub fn new_random(width: u32, height: u32) -> Map {
+    pub fn new(width: u32, height: u32) -> Map {
         let data_size: u32 = width * height;
-        let mut new_map: Map = Map {
+        Map {
             height: height,
             width: width,
             data: vec![GroundType::Grass; (data_size) as usize],
             second_level_data: vec![SecondLevelType::Empty; (data_size) as usize],
-        };
+        }
+    }
+
+    pub fn new_random(width: u32, height: u32) -> Map {
+        let data_size = width * height;
+        let mut new_map = Map::new(width, height);
 
         let mut height_noise = noise::ComplexNoise::new(4);
         let mut tree_noise = noise::ComplexNoise::new(3);

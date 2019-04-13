@@ -1,6 +1,8 @@
 
 
 use std::fs;
+use std::fs::File;
+use std::io::Read;
 
 
 use std::collections::HashMap;
@@ -12,6 +14,7 @@ use super::entity_holder::{EntityHolder};
 use super::entity::{EntityType, Task};
 
 use super::binary_helpers::Binaryable;
+use super::binary_helpers;
 
 
 pub enum GameEvent {
@@ -44,14 +47,34 @@ pub struct GameState {
 }
 
 
-impl Binaryable for GameState {
+impl binary_helpers::Binaryable for GameState {
     fn as_binary(&self) -> Vec<u8> {
         let mut binary_data: Vec<u8> = Vec::new();
 
+        binary_data.extend(binary_helpers::u32_as_bytes(self.tick));
         binary_data.extend(self.map.as_padded_binary());
         binary_data.extend(self.entity_holder.as_padded_binary());
 
         binary_data
+    }
+
+    fn from_binary(binary_data: Vec<u8>) -> GameState {
+        println!("Loading GameState from binary");
+
+        let (tick ,binary_data) = binary_helpers::pop_u32(binary_data);
+        let (map_data, binary_data) = binary_helpers::pop_padded(binary_data);
+        let (entity_data, binary_data) = binary_helpers::pop_padded(binary_data);
+
+        println!("Map data: {}", map_data.len());
+        println!("Entity data: {}", entity_data.len());
+        println!("Rest of the data: {}", binary_data.len());
+
+        GameState {
+            tick: tick,
+            map: Map::from_binary(map_data),
+            entity_holder: EntityHolder::new(),
+            event_log: Vec::new(),
+        }
     }
 }
 
@@ -64,6 +87,13 @@ impl GameState {
             entity_holder: EntityHolder::new(),
             event_log: Vec::new(),
         }
+    }
+
+    pub fn from_file_name(file_name: String) -> GameState {
+        let mut file_object = File::open(file_name).expect("File name not found");
+        let mut binary_data: Vec<u8> = Vec::new();
+        file_object.read_to_end(&mut binary_data).expect("File reading failed");
+        GameState::from_binary(binary_data)
     }
 
     pub fn map(&self) -> &Map { &self.map }

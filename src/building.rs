@@ -14,6 +14,10 @@ impl Binaryable for Building {
         binary_data.extend(i32_as_bytes(self.y));
         binary_data
     }
+
+    fn from_binary(binary_data: Vec<u8>) -> Building{
+        Building::new((0, 0))
+    }
 }
 
 impl Building {

@@ -52,6 +52,10 @@ impl Binaryable for Task {
         }
         binary_data
     }
+
+    fn from_binary(binary_data: Vec<u8>) -> Task {
+        Task::Idle
+    }
 }
 
 
@@ -125,6 +129,10 @@ impl Binaryable for Entity {
         binary_data.extend(self.task.as_padded_binary());
 
         binary_data
+    }
+
+    fn from_binary(binary_data: Vec<u8>) -> Entity {
+        Entity::new(0.0, 0.0, 0, 0, EntityType::Meelee)
     }
 }
 

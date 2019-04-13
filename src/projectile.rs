@@ -29,6 +29,10 @@ impl Binaryable for Projectile {
 
         binary_data
     }
+
+    fn from_binary(binary_data: Vec<u8>) -> Projectile {
+        Projectile::new(&Point::new(0.0, 0.0), &Point::new(10.0, 10.0))
+    }
 }
 
 

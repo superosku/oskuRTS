@@ -29,6 +29,10 @@ impl Binaryable for EntityHolder {
 
         binary_data
     }
+
+    fn from_binary(binary_data: Vec<u8>) -> EntityHolder {
+        EntityHolder::new()
+    }
 }
 
 

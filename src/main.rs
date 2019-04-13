@@ -2,6 +2,7 @@ extern crate sdl2;
 
 use std::collections::HashMap;
 use std::cmp::Ordering;
+use std::env;
 
 use sdl2::image::{LoadTexture, InitFlag};
 use sdl2::pixels::Color;
@@ -62,7 +63,18 @@ pub fn main() -> Result<(), String> {
 
     let mut camera: camera::Camera = camera::Camera::new(600, 600);
 
-    let mut game_state = GameState::new();
+    let args: Vec<String> = env::args().collect();
+
+    let mut game_state = match args.get(1) {
+        Some(argument) => {
+            println!("Loading game state from file: {}", argument);
+            GameState::from_file_name(argument.to_string())
+        },
+        None => {
+            println!("Initializing new game state");
+            GameState::new()
+        },
+    };
 
     let start_time = Instant::now();
     let mut last_time = start_time.elapsed();
@@ -76,6 +88,8 @@ pub fn main() -> Result<(), String> {
     let texture_holder: texture_holder::TextureHolder = texture_holder::TextureHolder::new(&texture_creator)?;
 
     let mut selected_entity_ids: HashMap<u32, bool> = HashMap::new();
+
+    // return Ok(());
 
     loop {
         // Events
