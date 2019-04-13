@@ -7,7 +7,7 @@ class FileTypeException(Exception):
 def bin_array_to_int(array):
     length = len(array)
     return sum([
-        data * 2 ** (8 * (length-i-1))
+        ord(data) * 2 ** (8 * (length-i-1))
         for i, data in enumerate(array)
     ])
 
@@ -101,11 +101,29 @@ class Unit:
 
         self.path = []
 
-        while not data_handler.empty():
+        path_data_handler = data_handler.pop_padded_data_handler()
+        while not path_data_handler.empty():
             self.path.append((
-                data_handler.pop_f32(),
-                data_handler.pop_f32(),
+                path_data_handler.pop_f32(),
+                path_data_handler.pop_f32(),
             ))
+        path_data_handler.expect_empty()
+
+        # Enemy point
+        enemy_point_exists = data_handler.pop_u8()
+        if enemy_point_exists:
+            self.enemy_point = (
+                data_handler.pop_f32(),
+                data_handler.pop_f32(),
+            )
+        else:
+            data_handler.pop_u32(),
+            data_handler.pop_u32(),
+            self.enemy_point = None
+
+        # Task
+        task_data = data_handler.pop_padded_data_handler()
+        self.task = task_data.binary_data
 
         data_handler.expect_empty()
 
@@ -122,6 +140,8 @@ class Unit:
             self.hp,
             self.cooldown,
             self.path,
+            self.enemy_point,
+            self.task
         )
         pass
 

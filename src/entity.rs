@@ -7,7 +7,8 @@ use super::projectile::Projectile;
 use super::binary_helpers::{Binaryable, u32_as_bytes, i32_as_bytes, f32_as_bytes};
 
 
-#[derive(Clone)]
+// #[derive(Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum ResourceType {
     Wood,
     Gold,
@@ -25,10 +26,31 @@ pub enum Task {
 }
 
 
-impl Task {
+impl Binaryable for Task {
     fn as_binary(&self) -> Vec<u8> {
-
-        Vec::new()
+        let mut binary_data: Vec<u8> = Vec::new();
+        match self {
+            Task::Idle => {
+                binary_data.push(0u8);
+            },
+            Task::Move { point } => {
+                binary_data.push(1u8);
+                binary_data.extend(f32_as_bytes(point.x));
+                binary_data.extend(f32_as_bytes(point.y));
+            },
+            Task::AttackMove { point } => {
+                binary_data.push(2u8);
+                binary_data.extend(f32_as_bytes(point.x));
+                binary_data.extend(f32_as_bytes(point.y));
+            },
+            Task::Gather { point, resource_type } => {
+                binary_data.push(3u8);
+                binary_data.extend(f32_as_bytes(point.x));
+                binary_data.extend(f32_as_bytes(point.y));
+                binary_data.push(*resource_type as u8);
+            }
+        }
+        binary_data
     }
 }
 
@@ -84,9 +106,23 @@ impl Binaryable for Entity {
             path_binary.extend(f32_as_bytes(path_point.x));
             path_binary.extend(f32_as_bytes(path_point.y));
         }
-        // let path_binary_length: u32 = path_binary.len() as u32;
-        // binary_data.extend(u32_as_bytes(path_binary_length));
+        let path_binary_length: u32 = path_binary.len() as u32;
+        binary_data.extend(u32_as_bytes(path_binary_length));
         binary_data.extend(path_binary);
+
+        match self.closest_seen_enemy_point {
+            Some(point) => {
+                binary_data.push(0u8);
+                binary_data.extend(f32_as_bytes(point.x));
+                binary_data.extend(f32_as_bytes(point.y));
+            },
+            None => {
+                binary_data.push(1u8);
+                binary_data.extend(u32_as_bytes(0u32));
+                binary_data.extend(u32_as_bytes(0u32));
+            }
+        }
+        binary_data.extend(self.task.as_padded_binary());
 
         binary_data
     }
