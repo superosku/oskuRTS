@@ -6,7 +6,8 @@ use super::point;
 use super::path_finder;
 use super::projectile::Projectile;
 use super::building::Building;
-use super::binary_helpers::{Binaryable, u32_as_bytes, vec_as_bytes};
+use super::binary_helpers::Binaryable;
+use super::binary_helpers;
 
 pub struct EntityHolder {
     pub entities: Vec<Entity>,
@@ -22,16 +23,41 @@ impl Binaryable for EntityHolder {
     fn as_binary(&self) -> Vec<u8> {
         let mut binary_data: Vec<u8> = Vec::new();
         
-        binary_data.extend(u32_as_bytes(self.id_counter));
-        binary_data.extend(vec_as_bytes(&self.entities));
-        binary_data.extend(vec_as_bytes(&self.projectiles));
-        binary_data.extend(vec_as_bytes(&self.buildings));
+        binary_data.extend(binary_helpers::u32_as_bytes(self.id_counter));
+        binary_data.extend(binary_helpers::vec_as_bytes(&self.entities));
+        binary_data.extend(binary_helpers::vec_as_bytes(&self.projectiles));
+        binary_data.extend(binary_helpers::vec_as_bytes(&self.buildings));
 
         binary_data
     }
 
     fn from_binary(binary_data: Vec<u8>) -> EntityHolder {
-        EntityHolder::new()
+        let (id_counter, binary_data) = binary_helpers::pop_u32(binary_data);
+        let (mut units_data, binary_data) = binary_helpers::pop_padded(binary_data);
+        let (mut projectiles_data, binary_data) = binary_helpers::pop_padded(binary_data);
+        let (mut buildings_data, binary_data) = binary_helpers::pop_padded(binary_data);
+
+        let mut new_entity_holder = EntityHolder::new();
+
+        new_entity_holder.id_counter = id_counter;
+
+        while buildings_data.len() > 0 {
+            let (building_data, tmp) = binary_helpers::pop_padded(buildings_data);
+            buildings_data = tmp;
+            new_entity_holder.buildings.push(Building::from_binary(building_data));
+        }
+        while projectiles_data.len() > 0 {
+            let (projectile_data, tmp) = binary_helpers::pop_padded(projectiles_data);
+            projectiles_data = tmp;
+            new_entity_holder.projectiles.push(Projectile::from_binary(projectile_data));
+        }
+        while units_data.len() > 0 {
+            let (unit_data, tmp) = binary_helpers::pop_padded(units_data);
+            units_data = tmp;
+            new_entity_holder.entities.push(Entity::from_binary(unit_data));
+        }
+
+        new_entity_holder
     }
 }
 

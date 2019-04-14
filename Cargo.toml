@@ -6,6 +6,7 @@ edition = "2018"
 
 [dependencies]
 rand = "0.6"
+byteorder = "1"
 
 [dependencies.sdl2]
 version = "0.32"

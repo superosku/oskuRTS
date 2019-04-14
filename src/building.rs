@@ -1,5 +1,6 @@
 
-use super::binary_helpers::{Binaryable, u32_as_bytes, i32_as_bytes, f32_as_bytes};
+use super::binary_helpers::Binaryable;
+use super::binary_helpers;
 
 
 pub struct Building {
@@ -10,13 +11,15 @@ pub struct Building {
 impl Binaryable for Building {
     fn as_binary(&self) -> Vec<u8> {
         let mut binary_data: Vec<u8> = Vec::new();
-        binary_data.extend(i32_as_bytes(self.x));
-        binary_data.extend(i32_as_bytes(self.y));
+        binary_data.extend(binary_helpers::i32_as_bytes(self.x));
+        binary_data.extend(binary_helpers::i32_as_bytes(self.y));
         binary_data
     }
 
     fn from_binary(binary_data: Vec<u8>) -> Building{
-        Building::new((0, 0))
+        let (x, binary_data) = binary_helpers::pop_i32(binary_data);
+        let (y, binary_data) = binary_helpers::pop_i32(binary_data);
+        Building::new((x, y))
     }
 }
 

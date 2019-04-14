@@ -1,3 +1,4 @@
+use byteorder::{ByteOrder, LittleEndian, BigEndian};
 
 
 pub trait Binaryable {
@@ -41,22 +42,6 @@ pub fn u32_as_bytes(input: u32) -> Vec<u8> {
     binary_data
 }
 
-pub fn bytes_as_u32(input: Vec<u8>) -> u32 {
-    let mut sum: u32 = 0;
-    for i in 0..4 {
-        match input.get(i) {
-            Some(number) => {
-                sum *= 256;
-                sum += *number as u32;
-            },
-            None => {
-                println!("This should never happen");
-            }
-        }
-    }
-    sum
-}
-
 
 pub fn i32_as_bytes(input: i32) -> Vec<u8> {
     let mut binary_data: Vec<u8> = vec![0; 4];
@@ -83,12 +68,36 @@ pub fn pop_bytes_from_vec(binary_data: Vec<u8>, amount: u32) -> (Vec<u8>, Vec<u8
     )
 }
 
-pub fn pop_u32(binary_data: Vec<u8>) -> (u32, Vec<u8>) {
-    let (a, b) = pop_bytes_from_vec(binary_data, 4);
-    
+pub fn pop_f32(binary_data: Vec<u8>) -> (f32, Vec<u8>) {
+    let (value_data, binary_data) = pop_bytes_from_vec(binary_data, 4);
     (
-        bytes_as_u32(a),
-        b,
+        LittleEndian::read_f32(value_data.as_slice()),
+        binary_data,
+    )
+}
+
+pub fn pop_i32(binary_data: Vec<u8>) -> (i32, Vec<u8>) {
+    let (value_data, binary_data) = pop_bytes_from_vec(binary_data, 4);
+    (
+        BigEndian::read_i32(value_data.as_slice()),
+        binary_data,
+    )
+}
+
+pub fn pop_u32(binary_data: Vec<u8>) -> (u32, Vec<u8>) {
+    let (value_data, binary_data) = pop_bytes_from_vec(binary_data, 4);
+    (
+        BigEndian::read_u32(value_data.as_slice()),
+        binary_data,
+    )
+}
+
+pub fn pop_u8(binary_data: Vec<u8>) -> (u8, Vec<u8>) {
+    let (value_data, binary_data) = pop_bytes_from_vec(binary_data, 1);
+    (
+        value_data[0],
+        // BigEndian::read_u8(value_data.as_slice()),
+        binary_data,
     )
 }
 

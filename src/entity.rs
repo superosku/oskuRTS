@@ -5,6 +5,7 @@ use super::map;
 use super::projectile::Projectile;
 
 use super::binary_helpers::{Binaryable, u32_as_bytes, i32_as_bytes, f32_as_bytes};
+use super::binary_helpers;
 
 
 // #[derive(Clone)]
@@ -54,7 +55,37 @@ impl Binaryable for Task {
     }
 
     fn from_binary(binary_data: Vec<u8>) -> Task {
-        Task::Idle
+        let (task_type, binary_data) = binary_helpers::pop_u8(binary_data);
+        match task_type {
+            0 => Task::Idle,
+            1 => {
+                let (point_x, binary_data) = binary_helpers::pop_f32(binary_data);
+                let (point_y, binary_data) = binary_helpers::pop_f32(binary_data);
+                Task::Move {
+                    point: point::Point::new(point_x, point_y)
+                }
+            },
+            2 => {
+                let (point_x, binary_data) = binary_helpers::pop_f32(binary_data);
+                let (point_y, binary_data) = binary_helpers::pop_f32(binary_data);
+                Task::AttackMove {
+                    point: point::Point::new(point_x, point_y)
+                }
+            },
+            3 => {
+                let (point_x, binary_data) = binary_helpers::pop_f32(binary_data);
+                let (point_y, binary_data) = binary_helpers::pop_f32(binary_data);
+                let (resource_type, binary_data) = binary_helpers::pop_u8(binary_data);
+                Task::Gather {
+                    point: point::Point::new(point_x, point_y),
+                    resource_type: ResourceType::Wood,
+                }
+            },
+            _ => {
+                println!("This should not happen, unknown Task id");
+                Task::Idle
+            }
+        }
     }
 }
 
@@ -132,7 +163,54 @@ impl Binaryable for Entity {
     }
 
     fn from_binary(binary_data: Vec<u8>) -> Entity {
-        Entity::new(0.0, 0.0, 0, 0, EntityType::Meelee)
+        let (location_x, binary_data) = binary_helpers::pop_f32(binary_data);
+        let (location_y, binary_data) = binary_helpers::pop_f32(binary_data);
+        let (id, binary_data) = binary_helpers::pop_u32(binary_data);
+        let (entity_type, binary_data) = binary_helpers::pop_u8(binary_data);
+        let (waypoint_index, binary_data) = binary_helpers::pop_u32(binary_data);
+        let (orientation, binary_data) = binary_helpers::pop_u32(binary_data);
+        let (team_id, binary_data) = binary_helpers::pop_u32(binary_data);
+        let (hp, binary_data) = binary_helpers::pop_i32(binary_data);
+        let (cooldown, binary_data) = binary_helpers::pop_u32(binary_data);
+        let (mut path_binary_data, binary_data) = binary_helpers::pop_padded(binary_data);
+        let (closest_seen_enemy_point_exists, binary_data) = binary_helpers::pop_u8(binary_data);
+        let (closest_seen_enemy_point_x, binary_data) = binary_helpers::pop_f32(binary_data);
+        let (closest_seen_enemy_point_y, binary_data) = binary_helpers::pop_f32(binary_data);
+        let (task_binary_data, binary_data) = binary_helpers::pop_padded(binary_data);
+
+        let mut path: Vec<point::Point> = Vec::new();
+        while path_binary_data.len() > 0 {
+            let mut point_x: f32 = 0.0;
+            let mut point_y: f32 = 0.0;
+            let (point_x, tmp1) = binary_helpers::pop_f32(path_binary_data);
+            let (point_y, tmp2) = binary_helpers::pop_f32(tmp1);
+            path_binary_data = tmp2;
+            path.push(point::Point::new(point_x, point_y));
+        }
+
+        Entity {
+            location: point::Point::new(location_x, location_y),
+            id: id,
+            entity_type: match entity_type {
+                0 => EntityType::Peasant,
+                1 => EntityType::Ranged,
+                2 => EntityType::Meelee,
+                _ => {println!("This should not happen"); EntityType::Peasant}
+            },
+            waypoint_index: waypoint_index,
+            path: path,
+            orientation: orientation,
+            team_id: team_id,
+            hp: hp,
+            cooldown: cooldown,
+            closest_seen_enemy_point: if closest_seen_enemy_point_exists == 0
+                {None} else
+                {Some(point::Point::new(
+                    closest_seen_enemy_point_x,
+                    closest_seen_enemy_point_y,
+                ))},
+            task: Task::from_binary(task_binary_data),
+        }
     }
 }
 

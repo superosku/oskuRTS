@@ -72,7 +72,7 @@ impl binary_helpers::Binaryable for GameState {
         GameState {
             tick: tick,
             map: Map::from_binary(map_data),
-            entity_holder: EntityHolder::new(),
+            entity_holder: EntityHolder::from_binary(entity_data),
             event_log: Vec::new(),
         }
     }

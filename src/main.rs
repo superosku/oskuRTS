@@ -1,4 +1,6 @@
 extern crate sdl2;
+extern crate byteorder;
+
 
 use std::collections::HashMap;
 use std::cmp::Ordering;

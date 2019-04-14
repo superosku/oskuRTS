@@ -4,7 +4,8 @@ use super::point::Point;
 use super::map;
 
 
-use super::binary_helpers::{Binaryable, u32_as_bytes, i32_as_bytes, f32_as_bytes};
+use super::binary_helpers::Binaryable;
+use super::binary_helpers;
 
 
 pub struct Projectile {
@@ -19,19 +20,31 @@ impl Binaryable for Projectile {
     fn as_binary(&self) -> Vec<u8> {
         let mut binary_data: Vec<u8> = Vec::new();
 
-        binary_data.extend(f32_as_bytes(self.location.x));
-        binary_data.extend(f32_as_bytes(self.location.y));
-        binary_data.extend(f32_as_bytes(self.start_point.x));
-        binary_data.extend(f32_as_bytes(self.start_point.y));
-        binary_data.extend(f32_as_bytes(self.end_point.x));
-        binary_data.extend(f32_as_bytes(self.end_point.y));
-        binary_data.extend(f32_as_bytes(self.angle));
+        binary_data.extend(binary_helpers::f32_as_bytes(self.location.x));
+        binary_data.extend(binary_helpers::f32_as_bytes(self.location.y));
+        binary_data.extend(binary_helpers::f32_as_bytes(self.start_point.x));
+        binary_data.extend(binary_helpers::f32_as_bytes(self.start_point.y));
+        binary_data.extend(binary_helpers::f32_as_bytes(self.end_point.x));
+        binary_data.extend(binary_helpers::f32_as_bytes(self.end_point.y));
+        binary_data.extend(binary_helpers::f32_as_bytes(self.angle));
 
         binary_data
     }
 
     fn from_binary(binary_data: Vec<u8>) -> Projectile {
-        Projectile::new(&Point::new(0.0, 0.0), &Point::new(10.0, 10.0))
+        let (location_x, binary_data) = binary_helpers::pop_f32(binary_data);
+        let (location_y, binary_data) = binary_helpers::pop_f32(binary_data);
+        let (start_point_x, binary_data) = binary_helpers::pop_f32(binary_data);
+        let (start_point_y, binary_data) = binary_helpers::pop_f32(binary_data);
+        let (end_point_x, binary_data) = binary_helpers::pop_f32(binary_data);
+        let (end_point_y, binary_data) = binary_helpers::pop_f32(binary_data);
+        let (angle, binary_data) = binary_helpers::pop_f32(binary_data);
+        Projectile {
+            location: Point::new(location_x, location_y),
+            start_point: Point::new(start_point_x, start_point_y),
+            end_point: Point::new(end_point_x, end_point_y),
+            angle: angle
+        }
     }
 }
 
