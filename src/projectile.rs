@@ -1,5 +1,3 @@
-use rand::{Rng};
-
 use super::point::Point;
 use super::map;
 
