@@ -1,5 +1,3 @@
-use rand::{Rng};
-
 use super::point;
 use super::map;
 use super::projectile::Projectile;
@@ -534,16 +532,10 @@ impl Entity {
 
         // Moving if another unit is too close
         if distance == 0.0 {
-            // Two units at exact same location. Move by random value
+            // Two units at exact same location. Move one of them a bit.
             if self.id < other.id {
                 self.move_vector(&point::Vector::new(0.1, 0.0), false);
             }
-            /*
-            let mut randomizer = rand::thread_rng();
-            let x_value: f32 = randomizer.gen_range(-0.1, 0.1);
-            let y_value: f32 = randomizer.gen_range(-0.1, 0.1);
-            self.move_vector(&point::Vector::new(x_value, y_value), false);
-            */
         } else if distance < max_dist {
             let move_vect = dist_vect.normalized().multiplied((max_dist - distance) * 0.3);
             self.move_vector(&move_vect, false);
