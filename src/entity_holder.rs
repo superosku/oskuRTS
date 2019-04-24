@@ -196,12 +196,6 @@ impl EntityHolder {
         self.id_counter += 1;
     }
 
-    /*
-    pub fn get_entity_refs(&self) -> &Vec<Entity> {
-        return &self.entities
-    }
-    */
-
     pub fn entities_interact_with_each_other(&mut self, map: &map::Map) {
         for entity in self.entities_iter_mut() {
             entity.clear_interaction_data();
@@ -219,27 +213,6 @@ impl EntityHolder {
                 }
             }
         }
-
-        /*
-        let entity_count = self.entities.len();
-        for entity_id_1 in 0..entity_count {
-            let (a, b) = self.entities.split_at_mut(entity_id_1 + 1);
-            for entity_id_2 in (entity_id_1 + 1)..entity_count {
-                match a.get_mut(entity_id_1) {
-                    Some(entity_1) => {
-                        match b.get_mut(entity_id_2 - entity_id_1 - 1) {
-                            Some(entity_2) => {
-                                entity_1.interact_with(entity_2, map);
-                                entity_2.interact_with(entity_1, map);
-                            },
-                            _ => {println!("This should not happen");}
-                        };
-                    },
-                    _ => {println!("This should not happen");}
-                };
-            }
-        }
-        */
     }
 
     pub fn order_stop(&mut self, entity_ids: HashMap<u32, bool>) {
