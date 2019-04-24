@@ -1,4 +1,8 @@
-use std::collections::HashMap;
+use std::collections::{HashMap};
+use std::collections::hash_map::{Values, ValuesMut};
+use std::iter::Iterator;
+
+use multi_mut::{HashMapMultiMut, BTreeMapMultiMut};
 
 use super::entity::{Entity, Task, EntityType};
 use super::map;
@@ -10,12 +14,14 @@ use super::binary_helpers::Binaryable;
 use super::binary_helpers;
 
 pub struct EntityHolder {
-    pub entities: Vec<Entity>,
+    pub entities: HashMap<u32, Entity>,
     pub projectiles: Vec<Projectile>,
     pub buildings: Vec<Building>,
-
     pub id_counter: u32,
-    pub debug_search_tree: HashMap<(i32, i32), Option<(i32, i32)>> // For debug drawings of the search tree
+
+    // For debug drawings of the search tree
+    pub debug_search_tree:
+        HashMap<(i32, i32), Option<(i32, i32)>>
 }
 
 
@@ -24,9 +30,9 @@ impl Binaryable for EntityHolder {
         let mut binary_data: Vec<u8> = Vec::new();
         
         binary_data.extend(binary_helpers::u32_as_bytes(self.id_counter));
-        binary_data.extend(binary_helpers::vec_as_bytes(&self.entities));
-        binary_data.extend(binary_helpers::vec_as_bytes(&self.projectiles));
-        binary_data.extend(binary_helpers::vec_as_bytes(&self.buildings));
+        binary_data.extend(binary_helpers::iter_as_bytes(self.entities_iter()));
+        binary_data.extend(binary_helpers::iter_as_bytes(self.projectiles.iter()));
+        binary_data.extend(binary_helpers::iter_as_bytes(self.buildings.iter()));
 
         binary_data
     }
@@ -54,7 +60,8 @@ impl Binaryable for EntityHolder {
         while units_data.len() > 0 {
             let (unit_data, tmp) = binary_helpers::pop_padded(units_data);
             units_data = tmp;
-            new_entity_holder.entities.push(Entity::from_binary(unit_data));
+            let mut entity = Entity::from_binary(unit_data);
+            new_entity_holder.entities.insert(entity.id(), entity);
         }
 
         new_entity_holder
@@ -65,13 +72,23 @@ impl Binaryable for EntityHolder {
 impl EntityHolder {
     pub fn new() -> EntityHolder {
         EntityHolder {
-            entities: Vec::new(),
+            entities: HashMap::new(),
             projectiles: Vec::new(),
             buildings: Vec::new(),
 
             id_counter: 0,
             debug_search_tree: HashMap::new(),
         }
+    }
+
+    pub fn entities_iter_mut(&mut self) -> ValuesMut<u32, Entity> { // Iterator<Item=&Entity> {
+        self.entities.values_mut()
+        // self.entities.iter_mut().map(|(k, v)| v)
+    }
+
+    pub fn entities_iter(&self) -> Values<u32, Entity> { // Iterator<Item=&Entity> {
+        self.entities.values()
+        // self.entities.iter().map(|(k, v)| v)
     }
 
     pub fn order_entities(
@@ -98,7 +115,7 @@ impl EntityHolder {
 
         // Find out distinct goal points
         let mut goal_points: HashMap<(i32, i32), bool> = HashMap::new();
-        for entity in self.entities.iter() {
+        for entity in self.entities_iter() {
             if entity_ids.contains_key(&entity.id()) {
                 let key = entity.location().as_i();
                 if !goal_points.contains_key(&key) {
@@ -135,7 +152,7 @@ impl EntityHolder {
                 old_point = next_point;
             }
 
-            for entity in self.entities.iter_mut() {
+            for entity in self.entities_iter_mut() {
                 if entity_ids.contains_key(&entity.id()) &&
                     entity.location().x as i32 == point.0 &&
                     entity.location().y as i32 == point.1
@@ -172,18 +189,38 @@ impl EntityHolder {
         if self.id_counter % 3 == 0 { entity_type = EntityType::Ranged }
         if self.id_counter % 3 == 1 { entity_type = EntityType::Peasant }
 
-        self.entities.push(Entity::new(x, y, self.id_counter, team_id, entity_type));
+        let mut new_entity = Entity::new(x, y, self.id_counter, team_id, entity_type);
+        let entity_id = new_entity.id();
+        self.entities.insert(entity_id, new_entity);
+
         self.id_counter += 1;
     }
 
+    /*
     pub fn get_entity_refs(&self) -> &Vec<Entity> {
         return &self.entities
     }
+    */
 
     pub fn entities_interact_with_each_other(&mut self, map: &map::Map) {
-        for entity in self.entities.iter_mut() {
+        for entity in self.entities_iter_mut() {
             entity.clear_interaction_data();
         }
+
+        let entity_keys: Vec<u32> = self.entities.keys().map(|k| k.clone()).collect();
+
+        for entity_key_1 in entity_keys.iter() {
+            for entity_key_2 in entity_keys.iter() {
+                if entity_key_1 != entity_key_2 {
+                    let (entity_1, entity_2) = self.entities.get_pair_mut(entity_key_1, entity_key_2).unwrap();
+
+                    entity_1.interact_with(entity_2, map);
+                    entity_2.interact_with(entity_1, map);
+                }
+            }
+        }
+
+        /*
         let entity_count = self.entities.len();
         for entity_id_1 in 0..entity_count {
             let (a, b) = self.entities.split_at_mut(entity_id_1 + 1);
@@ -202,10 +239,11 @@ impl EntityHolder {
                 };
             }
         }
+        */
     }
 
     pub fn order_stop(&mut self, entity_ids: HashMap<u32, bool>) {
-        for entity in self.entities.iter_mut() {
+        for entity in self.entities_iter_mut() {
             if entity_ids.contains_key(&entity.id()) {
                 entity.order_stop();
             }
@@ -213,13 +251,13 @@ impl EntityHolder {
     }
 
     pub fn entities_interact_with_map(&mut self, map: &map::Map) {
-        for entity in self.entities.iter_mut() {
+        for entity in self.entities_iter_mut() {
             entity.interact_with_map(&map);
         }
     }
 
     pub fn entities_ai_stuff(&mut self, map: &map::Map) {
-        for entity in self.entities.iter_mut() {
+        for entity in self.entities.values_mut() {
             match entity.ai_stuff(map) { Some(projectile) => {
                 self.projectiles.push(projectile);
             }, _ => {} }
@@ -230,7 +268,7 @@ impl EntityHolder {
         for projectile in self.projectiles.iter_mut() {
             projectile.increment();
             if projectile.at_location() {
-                'inner: for entity in self.entities.iter_mut() {
+                'inner: for entity in self.entities.values_mut() {
                     if entity.location().dist_to(projectile.location()).length() < 0.5 {
                         entity.take_hit(12);
                         break 'inner;
@@ -251,7 +289,7 @@ impl EntityHolder {
 
         self.increment_projectiles();
 
-        self.entities.retain(|entity| {entity.alive()});
+        self.entities.retain(|_, entity| {entity.alive()});
     }
 }
 

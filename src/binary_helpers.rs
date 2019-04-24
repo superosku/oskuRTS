@@ -1,3 +1,5 @@
+use std::iter::Iterator;
+
 use byteorder::{ByteOrder, LittleEndian, BigEndian};
 
 
@@ -17,11 +19,18 @@ pub trait Binaryable {
 }
 
 
-pub fn vec_as_bytes<T: Binaryable>(data: &Vec<T>) -> Vec<u8> {
+pub fn iter_as_bytes<'a, I: Iterator<Item = &'a T>, T: Binaryable + 'a>(data: I) -> Vec<u8> {
+    /*
+    iter_as_bytes(data.iter())
+}
+pub fn iter_as_bytes<T: Binaryable>(iter: Iterator<Item=&T>) -> Vec<u8>
+{
+    */
     let mut binary_data: Vec<u8> = Vec::new();
 
     let mut vector_binary_data: Vec<u8> = Vec::new();
-    for entity in data.iter() {
+    // for entity in data.iter() {
+    for entity in data {
         vector_binary_data.extend(entity.as_padded_binary());
     }
     binary_data.extend(u32_as_bytes(vector_binary_data.len() as u32));

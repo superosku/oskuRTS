@@ -1,3 +1,4 @@
+extern crate multi_mut;
 extern crate sdl2;
 extern crate byteorder;
 
@@ -117,7 +118,7 @@ pub fn main() -> Result<(), String> {
             if left_pressed == true {
                 { // Setting selected entities
                     selected_entity_ids.clear();
-                    for entity in game_state.entity_holder().entities.iter() {
+                    for entity in game_state.entity_holder().entities_iter() {
                         if entity.is_inside(mouse_game_pos, mouse_start_game_pos) && entity.team_id() == 0 {
                             selected_entity_ids.insert(entity.id(), true);
                         }
@@ -201,7 +202,7 @@ pub fn main() -> Result<(), String> {
                     "Oskun peli, tick: {}, fps: {}, entities: {}",
                     tick,
                     (1.0 / (elapsed_time as f32 / 1000000000.0)) as i32,
-                    game_state.entity_holder().get_entity_refs().len()
+                    game_state.entity_holder().entities_iter().len()
                 );
                 mut_window.set_title(&title).map_err(|e| e.to_string())?;
             }
@@ -278,8 +279,9 @@ pub fn main() -> Result<(), String> {
             let unit_tile_size = (64.0 / camera.zoom) as u32;
 
             // let entities = game_state.entity_holder().get_entity_refs();
-            let ref_to_entities: &Vec<entity::Entity> = game_state.entity_holder().get_entity_refs(); //.map(|e| &e).collect();
-            let mut entity_refs: Vec<&entity::Entity> = ref_to_entities.iter().map(|e| e).collect();
+            // let ref_to_entities: &Vec<entity::Entity> = game_state.entity_holder().entities_iter(); //.map(|e| &e).collect();
+            let ref_to_entities = game_state.entity_holder().entities_iter(); //.map(|e| &e).collect();
+            let mut entity_refs: Vec<&entity::Entity> = ref_to_entities.map(|e| e).collect();
 
             entity_refs.sort_by(
                 |a, b|
