@@ -197,12 +197,13 @@ pub fn main() -> Result<(), String> {
             let mut_window = canvas.window_mut();
             let window_size = mut_window.size();
             camera.update_window_size(window_size.0, window_size.1);
-            if tick % 60 == 0 {
+            if tick % 10 == 0 {
                 let title = format!(
-                    "Oskun peli, tick: {}, fps: {}, entities: {}",
+                    "Oskun peli, tick: {}, fps: {}, entities: {}, entity_interactions: {}",
                     tick,
                     (1.0 / (elapsed_time as f32 / 1000000000.0)) as i32,
-                    game_state.entity_holder().entities_iter().len()
+                    game_state.entity_holder().entities_iter().len(),
+                    game_state.entity_holder().debug_entity_interaction_count,
                 );
                 mut_window.set_title(&title).map_err(|e| e.to_string())?;
             }

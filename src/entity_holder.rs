@@ -19,9 +19,12 @@ pub struct EntityHolder {
     pub buildings: Vec<Building>,
     pub id_counter: u32,
 
+    pub entity_location_map: HashMap<(i32, i32), Vec<u32>>,
+
     // For debug drawings of the search tree
     pub debug_search_tree:
-        HashMap<(i32, i32), Option<(i32, i32)>>
+        HashMap<(i32, i32), Option<(i32, i32)>>,
+    pub debug_entity_interaction_count: u32,
 }
 
 
@@ -75,9 +78,12 @@ impl EntityHolder {
             entities: HashMap::new(),
             projectiles: Vec::new(),
             buildings: Vec::new(),
-
             id_counter: 0,
+
+            entity_location_map: HashMap::new(),
+
             debug_search_tree: HashMap::new(),
+            debug_entity_interaction_count: 0,
         }
     }
 
@@ -196,20 +202,73 @@ impl EntityHolder {
         self.id_counter += 1;
     }
 
-    pub fn entities_interact_with_each_other(&mut self, map: &map::Map) {
+    pub fn update_entity_location_map(&mut self) {
+        let mut entity_location_map = HashMap::new();
+
+        for entity in self.entities_iter() {
+            let key = entity.location().as_i();
+
+            if !entity_location_map.contains_key(&key) {
+                let new_vec: Vec<u32> = Vec::new();
+                entity_location_map.insert(key, new_vec);
+            }
+
+            match entity_location_map.get_mut(&key) {
+                Some(vector) => {
+                    vector.push(entity.id());
+                }, None => {
+                    println!("This should not happen");
+                }
+            }
+        }
+
+        self.entity_location_map = entity_location_map;
+    }
+
+    pub fn get_close_entity_ids(&self, location: &point::Point, radius: f32) -> Vec<u32> {
+        let mut close_entity_ids: Vec<u32> = Vec::new();
+
+        // println!("Get close entity_ids, {},{} {}", location.x, location.y, radius);
+        for x in ((location.x as f32 - radius) as i32)..((location.x as f32 + radius) as i32 + 1) {
+            for y in ((location.y as f32 - radius) as i32)..((location.y as f32 + radius) as i32 + 1) {
+                // println!("X {} Y{}", x, y);
+                match self.entity_location_map.get(&(x, y)) {
+                    Some(ids) => {
+                        for id in ids.iter() {
+                            close_entity_ids.push(*id);
+                        }
+                    }, None => {}
+                }
+            }
+        }
+
+        close_entity_ids
+    }
+
+    pub fn entities_interact_with_each_other(&mut self, map: &map::Map, tick: u32) {
         for entity in self.entities_iter_mut() {
             entity.clear_interaction_data();
         }
 
         let entity_keys: Vec<u32> = self.entities.keys().map(|k| k.clone()).collect();
 
+        self.update_entity_location_map();
+
+        self.debug_entity_interaction_count = 0;
+
         for entity_key_1 in entity_keys.iter() {
-            for entity_key_2 in entity_keys.iter() {
+            let entity_1_location = match self.entities.get(entity_key_1) {
+                Some(entity) => entity.location().clone(),
+                None => {println!("This should not happen"); point::Point::new(0.0, 0.0)}
+            };
+            for entity_key_2 in self.get_close_entity_ids(&entity_1_location, 5.0).iter() {
+            // for entity_key_2 in entity_keys.iter() {
                 if entity_key_1 != entity_key_2 {
                     let (entity_1, entity_2) = self.entities.get_pair_mut(entity_key_1, entity_key_2).unwrap();
 
                     entity_1.interact_with(entity_2, map);
-                    entity_2.interact_with(entity_1, map);
+                    // entity_2.interact_with(entity_1, map);
+                    self.debug_entity_interaction_count += 1;
                 }
             }
         }
@@ -255,9 +314,9 @@ impl EntityHolder {
         });
     }
 
-    pub fn entity_ai(&mut self, map: &map::Map) {
+    pub fn entity_ai(&mut self, map: &map::Map, tick: u32) {
         self.entities_ai_stuff(&map);
-        self.entities_interact_with_each_other(&map);
+        self.entities_interact_with_each_other(&map, tick);
         self.entities_interact_with_map(&map);
 
         self.increment_projectiles();

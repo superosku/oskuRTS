@@ -102,7 +102,7 @@ impl GameState {
     pub fn tick(&self) -> u32 { self.tick }
     pub fn do_tick(&mut self) {
         self.tick += 1;
-        self.entity_holder.entity_ai(&self.map);
+        self.entity_holder.entity_ai(&self.map, self.tick);
         while let Some(game_event) = self.event_log.pop() {
             match game_event {
                 GameEvent::OrderUnits { task, unit_ids } => {
