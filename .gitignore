@@ -4,5 +4,5 @@
 **/*.swo
 rusty-tags.vi
 
-saved_game.dat
+saved_game*.dat
 
