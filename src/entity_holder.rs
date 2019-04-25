@@ -13,6 +13,10 @@ use super::building::Building;
 use super::binary_helpers::Binaryable;
 use super::binary_helpers;
 
+
+const UNIT_CHECKUP_GRID_SIZE: i32 = 2;
+
+
 pub struct EntityHolder {
     pub entities: HashMap<u32, Entity>,
     pub projectiles: Vec<Projectile>,
@@ -207,6 +211,7 @@ impl EntityHolder {
 
         for entity in self.entities_iter() {
             let key = entity.location().as_i();
+            let key = (key.0 / UNIT_CHECKUP_GRID_SIZE, key.1 / UNIT_CHECKUP_GRID_SIZE);
 
             if !entity_location_map.contains_key(&key) {
                 let new_vec: Vec<u32> = Vec::new();
@@ -225,17 +230,17 @@ impl EntityHolder {
         self.entity_location_map = entity_location_map;
     }
 
-    pub fn get_close_entity_ids(&self, location: &point::Point, radius: f32) -> Vec<u32> {
+    pub fn get_close_entity_ids(&self, location: &point::Point, radius: f32, min_key: u32) -> Vec<u32> {
         let mut close_entity_ids: Vec<u32> = Vec::new();
 
-        // println!("Get close entity_ids, {},{} {}", location.x, location.y, radius);
-        for x in ((location.x as f32 - radius) as i32)..((location.x as f32 + radius) as i32 + 1) {
-            for y in ((location.y as f32 - radius) as i32)..((location.y as f32 + radius) as i32 + 1) {
-                // println!("X {} Y{}", x, y);
+        for x in ((location.x as f32 - radius) as i32 / UNIT_CHECKUP_GRID_SIZE)..((location.x as f32 + radius) as i32 / UNIT_CHECKUP_GRID_SIZE + 1) {
+            for y in ((location.y as f32 - radius) as i32 / UNIT_CHECKUP_GRID_SIZE)..((location.y as f32 + radius) as i32 / UNIT_CHECKUP_GRID_SIZE + 1) {
                 match self.entity_location_map.get(&(x, y)) {
                     Some(ids) => {
                         for id in ids.iter() {
-                            close_entity_ids.push(*id);
+                            if *id >= min_key {
+                                close_entity_ids.push(*id);
+                            }
                         }
                     }, None => {}
                 }
@@ -246,29 +251,60 @@ impl EntityHolder {
     }
 
     pub fn entities_interact_with_each_other(&mut self, map: &map::Map, tick: u32) {
-        for entity in self.entities_iter_mut() {
-            entity.clear_interaction_data();
-        }
-
         let entity_keys: Vec<u32> = self.entities.keys().map(|k| k.clone()).collect();
-
-        self.update_entity_location_map();
 
         self.debug_entity_interaction_count = 0;
 
         for entity_key_1 in entity_keys.iter() {
-            let entity_1_location = match self.entities.get(entity_key_1) {
-                Some(entity) => entity.location().clone(),
-                None => {println!("This should not happen"); point::Point::new(0.0, 0.0)}
-            };
-            for entity_key_2 in self.get_close_entity_ids(&entity_1_location, 5.0).iter() {
-            // for entity_key_2 in entity_keys.iter() {
-                if entity_key_1 != entity_key_2 {
-                    let (entity_1, entity_2) = self.entities.get_pair_mut(entity_key_1, entity_key_2).unwrap();
+            let entity_1_location = self.entities.get(entity_key_1).unwrap().location();
 
-                    entity_1.interact_with(entity_2, map);
-                    // entity_2.interact_with(entity_1, map);
-                    self.debug_entity_interaction_count += 1;
+            for entity_key_2 in self.get_close_entity_ids(&entity_1_location, 1.0, entity_key_1 + 1).iter() {
+                let (entity_1, entity_2) = self.entities.get_pair_mut(entity_key_1, entity_key_2).unwrap();
+
+                entity_1.interact_with(entity_2, map);
+                entity_2.interact_with(entity_1, map);
+
+                self.debug_entity_interaction_count += 2;
+            }
+        }
+    }
+
+    pub fn update_closest_seen_enemy_points(&mut self, tick: u32) {
+        let mut fast_update_list: Vec<(u32, u32)> = Vec::new();
+        let mut slow_update_list: Vec<(u32, Vec<u32>)> = Vec::new();
+        for entity in self.entities.values() {
+            let tick_id = tick + entity.id();
+            if tick_id % 20 == 0 {
+                // Every n:th tick we scan for closest enemy and store its id and point
+                slow_update_list.push((entity.id(), self.get_close_entity_ids(entity.location(), 10.0, 0)));
+            } else {
+                // When not scanning for closest enemy we update the enemy point based on stored
+                // enemy id
+                match entity.closest_seen_enemy_id() {
+                    Some(id) => {
+                        fast_update_list.push((entity.id(), *id));
+                        // entity.update_closest_seen_enemy_point(self.entities.get(id));
+                    }, None => {}
+                }
+            }
+        }
+        for (entity_id, enemy_id) in fast_update_list.iter() {
+            match self.entities.get_pair_mut(entity_id, enemy_id) {
+                Some( (entity, enemy) ) => {
+                    entity.update_closest_seen_enemy_point(enemy)
+                }, None => {
+                    let mut entity = self.entities.get_mut(entity_id).unwrap();
+                    entity.reset_closest_seen_enemy_position();
+                }
+            }
+        }
+        for (entity_id, enemy_list) in slow_update_list.iter() {
+            let entity = self.entities.get_mut(entity_id).unwrap();
+            entity.reset_closest_seen_enemy_position();
+            for enemy_id in enemy_list.iter() {
+                if enemy_id != entity_id {
+                    let (entity, enemy) = self.entities.get_pair_mut(entity_id, enemy_id).unwrap();
+                    entity.update_closest_seen_enemy(enemy);
                 }
             }
         }
@@ -315,6 +351,8 @@ impl EntityHolder {
     }
 
     pub fn entity_ai(&mut self, map: &map::Map, tick: u32) {
+        self.update_entity_location_map();
+        self.update_closest_seen_enemy_points(tick);
         self.entities_ai_stuff(&map);
         self.entities_interact_with_each_other(&map, tick);
         self.entities_interact_with_map(&map);

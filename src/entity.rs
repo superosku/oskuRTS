@@ -113,7 +113,9 @@ pub struct Entity {
     team_id: u32,
     hp: i32,
     cooldown: u32,
+
     closest_seen_enemy_point: Option<point::Point>,
+    closest_seen_enemy_id: Option<u32>,
 
     // For ai handling
     task: Task,
@@ -207,6 +209,7 @@ impl Binaryable for Entity {
                     closest_seen_enemy_point_x,
                     closest_seen_enemy_point_y,
                 ))},
+            closest_seen_enemy_id: None,
             task: Task::from_binary(task_binary_data),
         }
     }
@@ -229,6 +232,7 @@ impl Entity {
             hp: 200,
             cooldown: 0,
             closest_seen_enemy_point: None,
+            closest_seen_enemy_id: None,
 
             task: Task::Idle,
         }
@@ -239,6 +243,7 @@ impl Entity {
     pub fn orientation(&self) -> u32 { self.orientation }
     pub fn path(&self) -> &Vec<point::Point> { &self.path }
     pub fn closest_seen_enemy_point(&self) -> &Option<point::Point> { &self.closest_seen_enemy_point }
+    pub fn closest_seen_enemy_id(&self) -> &Option<u32> { &self.closest_seen_enemy_id}
     pub fn location(&self) -> &point::Point { &self.location }
     pub fn id(&self) -> u32 { self.id }
     pub fn team_id(&self) -> u32 { self.team_id }
@@ -473,9 +478,11 @@ impl Entity {
         self.task = Task::Idle;
     }
 
+    /*
     pub fn clear_interaction_data(&mut self) {
         self.closest_seen_enemy_point = None;
     }
+    */
 
     pub fn move_vector(&mut self, vector: &point::Vector, update_orientation: bool) {
         self.location.x += vector.x;
@@ -504,31 +511,39 @@ impl Entity {
         }
     }
 
+    pub fn reset_closest_seen_enemy_position(&mut self) {
+        self.closest_seen_enemy_point = None;
+        self.closest_seen_enemy_id= None;
+    }
+
+    pub fn update_closest_seen_enemy_point(&mut self, other_entity: &Entity) {
+        self.closest_seen_enemy_point = Some(other_entity.location().clone());
+    }
+
+    pub fn update_closest_seen_enemy(&mut self, other_entity: &Entity) {
+        if other_entity.team_id() != self.team_id() {
+            let distance = self.location().dist_to(&other_entity.location()).length();
+            match self.closest_seen_enemy_point {
+                Some(point) => {
+                    let current_distance = self.location().dist_to(&point).length();
+                    if distance < current_distance {
+                        self.closest_seen_enemy_point = Some(other_entity.location().clone());
+                        self.closest_seen_enemy_id= Some(other_entity.id());
+                    }
+                },
+                None => {
+                    self.closest_seen_enemy_point = Some(other_entity.location().clone());
+                    self.closest_seen_enemy_id= Some(other_entity.id());
+                }
+            }
+        }
+    }
+
     pub fn interact_with(&mut self, other: &Entity, map: &map::Map) {
         let max_dist = 0.55;
 
         let dist_vect = self.location.dist_to(&other.location);
         let distance = dist_vect.length();
-
-        // Storing closest seen enemy position
-        if 
-            other.team_id != self.team_id &&
-            distance < self.seeing_distance() as f32
-        {
-            let currently_stored_points_distance = match &mut self.closest_seen_enemy_point {
-                Some(point) => self.location.dist_to(&point).length(),
-                _ => std::f32::INFINITY
-            };
-            if (
-                distance < currently_stored_points_distance &&
-                // self.can_reach(distance, other.location(), map)
-                map.line_of_sight(&self.location, &other.location)
-            ) {
-                self.closest_seen_enemy_point = Some(
-                    point::Point::new(other.location.x, other.location.y)
-                );
-            }
-        }
 
         // Moving if another unit is too close
         if distance == 0.0 {
